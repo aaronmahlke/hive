@@ -1,0 +1,51 @@
+import { db } from "../../../database";
+import { projects, worktrees, sessions, signals, reviews, reviewComments } from "../../../database/schema";
+import { eq } from "drizzle-orm";
+import { stopOpenCodeServer } from "../../../services/process";
+
+/**
+ * Permanently delete a project and all its data.
+ * This is NOT what closing a tab does - tabs are client-side only.
+ * This is for actual project removal (e.g., from a settings/manage page).
+ */
+export default defineEventHandler(async (event) => {
+  const id = getRouterParam(event, "id");
+  if (!id) {
+    throw createError({ statusCode: 400, message: "id is required" });
+  }
+
+  // Clean up child records to avoid FK constraint failures
+  const wts = await db
+    .select()
+    .from(worktrees)
+    .where(eq(worktrees.projectId, id));
+
+  for (const wt of wts) {
+    stopOpenCodeServer(wt.path);
+
+    const wtSessions = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.worktreeId, wt.id));
+
+    for (const sess of wtSessions) {
+      await db.delete(signals).where(eq(signals.sessionId, sess.id));
+    }
+    await db.delete(sessions).where(eq(sessions.worktreeId, wt.id));
+
+    const wtReviews = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.worktreeId, wt.id));
+
+    for (const rev of wtReviews) {
+      await db.delete(reviewComments).where(eq(reviewComments.reviewId, rev.id));
+    }
+    await db.delete(reviews).where(eq(reviews.worktreeId, wt.id));
+  }
+
+  await db.delete(worktrees).where(eq(worktrees.projectId, id));
+  await db.delete(projects).where(eq(projects.id, id));
+
+  return { success: true };
+});
