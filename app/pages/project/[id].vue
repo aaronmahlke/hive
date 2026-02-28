@@ -26,7 +26,7 @@ const {
   closeOverlay,
   addComment,
   deleteComment,
-  toggleViewed,
+  markViewedAndNext,
 } = useChanges();
 
 const isSelectedFileViewed = computed(() =>
@@ -88,7 +88,7 @@ const isSelectedFileViewed = computed(() =>
       :comments="selectedFileComments"
       :viewed="isSelectedFileViewed"
       @close="closeOverlay"
-      @toggle-viewed="toggleViewed(selectedFile!)"
+      @toggle-viewed="markViewedAndNext(selectedFile!)"
       @add-comment="addComment($event)"
       @delete-comment="deleteComment($event)"
     />

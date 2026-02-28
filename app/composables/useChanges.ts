@@ -19,7 +19,6 @@ type ChangeComment = {
   createdAt: string;
 };
 
-// Singleton state — survives across component mounts
 const files = ref<ChangedFile[]>([]);
 const rawDiff = ref("");
 const loading = ref(false);
@@ -34,7 +33,6 @@ export function useChanges() {
   const route = useRoute();
   const projectId = computed(() => (route.params.id as string) || null);
 
-  // Parsed diff metadata per file (keyed by file name)
   const parsedFiles = computed(() => {
     if (!rawDiff.value) return new Map<string, FileDiffMetadata>();
     try {
@@ -64,17 +62,14 @@ export function useChanges() {
     comments.value.filter((c) => c.filePath === selectedFile.value),
   );
 
-  // Fetch changes from git
   async function fetchChanges() {
     const id = projectId.value;
     if (!id) return;
     loading.value = true;
-    console.log(`[changes] Fetching changes for project ${id}...`);
     try {
       const data = await $fetch(`/api/projects/${id}/changes`);
       files.value = (data as any).files || [];
       rawDiff.value = (data as any).diff || "";
-      console.log(`[changes] Got ${files.value.length} files, ${rawDiff.value.length} bytes diff`);
     } catch (e) {
       console.error("[changes] Failed to fetch:", e);
     } finally {
@@ -82,7 +77,6 @@ export function useChanges() {
     }
   }
 
-  // Fetch comments from DB
   async function fetchComments() {
     const id = projectId.value;
     if (!id) return;
@@ -94,7 +88,6 @@ export function useChanges() {
     }
   }
 
-  // Create a comment
   async function addComment(comment: {
     filePath: string;
     startLine: number;
@@ -115,7 +108,6 @@ export function useChanges() {
     }
   }
 
-  // Delete a comment
   async function deleteComment(commentId: string) {
     const id = projectId.value;
     if (!id) return;
@@ -129,7 +121,6 @@ export function useChanges() {
     }
   }
 
-  // Toggle viewed/staged state
   function toggleViewed(path: string) {
     const newSet = new Set(viewedFiles.value);
     if (newSet.has(path)) {
@@ -140,7 +131,31 @@ export function useChanges() {
     viewedFiles.value = newSet;
   }
 
-  // Fetch file content for files without a diff (untracked/new)
+  function markViewedAndNext(path: string) {
+    const newSet = new Set(viewedFiles.value);
+    const wasViewed = newSet.has(path);
+    if (wasViewed) {
+      newSet.delete(path);
+      viewedFiles.value = newSet;
+      return;
+    }
+
+    newSet.add(path);
+    viewedFiles.value = newSet;
+
+    const currentIndex = files.value.findIndex((f) => f.path === path);
+    for (let i = 1; i <= files.value.length; i++) {
+      const nextIndex = (currentIndex + i) % files.value.length;
+      const nextFile = files.value[nextIndex];
+      if (!newSet.has(nextFile.path)) {
+        selectFile(nextFile.path);
+        return;
+      }
+    }
+
+    closeOverlay();
+  }
+
   async function fetchFileContent(filePath: string) {
     const id = projectId.value;
     if (!id) return;
@@ -158,7 +173,6 @@ export function useChanges() {
     }
   }
 
-  // Select a file to view its diff
   function selectFile(path: string) {
     if (selectedFile.value === path) {
       selectedFile.value = null;
@@ -168,29 +182,24 @@ export function useChanges() {
     selectedFile.value = path;
     selectedFileContent.value = null;
 
-    // If no diff available for this file, fetch its content instead
     if (!parsedFiles.value.has(path)) {
       fetchFileContent(path);
     }
   }
 
-  // Close the overlay
   function closeOverlay() {
     selectedFile.value = null;
     selectedFileContent.value = null;
   }
 
-  // Request changes — assemble comments into prompt
   async function requestChanges() {
     const id = projectId.value;
     if (!id || !unresolvedComments.value.length) return;
 
     const store = useHiveStore();
 
-    // Assemble the feedback prompt
     const lines = ["Please address the following review feedback:\n"];
 
-    // Group by file
     const byFile = new Map<string, ChangeComment[]>();
     for (const c of unresolvedComments.value) {
       const existing = byFile.get(c.filePath) || [];
@@ -214,10 +223,8 @@ export function useChanges() {
       "---\nAfter making changes, let me know when you're ready for another review.",
     );
 
-    const prompt = lines.join("\n");
-    store.sendPrompt(id, prompt);
+    store.sendPrompt(id, lines.join("\n"));
 
-    // Resolve all comments
     const ids = unresolvedComments.value.map((c) => c.id);
     try {
       await $fetch(`/api/projects/${id}/change-comments/resolve`, {
@@ -232,7 +239,6 @@ export function useChanges() {
     closeOverlay();
   }
 
-  // Generate a default commit message from the changed files
   const commitMessage = computed(() => {
     const modified = files.value.filter((f) => f.status === "M").map((f) => f.path.split("/").pop());
     const added = files.value.filter((f) => f.status === "A" || f.status === "?").map((f) => f.path.split("/").pop());
@@ -249,7 +255,6 @@ export function useChanges() {
     return lines.join("\n");
   });
 
-  // Commit all changes
   const committing = ref(false);
   const commitError = ref<string | null>(null);
 
@@ -266,7 +271,6 @@ export function useChanges() {
         body: { message: message.trim() },
       });
 
-      // Reset state after successful commit
       viewedFiles.value = new Set();
       selectedFile.value = null;
       selectedFileContent.value = null;
@@ -282,10 +286,8 @@ export function useChanges() {
     }
   }
 
-  // Initialize when project changes
   function init() {
     const id = projectId.value;
-    console.log(`[changes] init called, projectId=${id}, activeProjectId=${activeProjectId}`);
     if (id && id !== activeProjectId) {
       activeProjectId = id;
       files.value = [];
@@ -299,7 +301,6 @@ export function useChanges() {
   }
 
   return {
-    // State
     files,
     rawDiff,
     loading,
@@ -316,12 +317,12 @@ export function useChanges() {
     committing,
     commitError,
 
-    // Actions
     fetchChanges,
     fetchComments,
     addComment,
     deleteComment,
     toggleViewed,
+    markViewedAndNext,
     selectFile,
     closeOverlay,
     requestChanges,

@@ -31,17 +31,9 @@ watch(currentProjectId, (id) => {
 async function openProject() {
   let selectedPath: string | null = null;
 
-  try {
-    const { open } = await import("@tauri-apps/plugin-dialog");
-    const result = await open({
-      directory: true,
-      multiple: false,
-      title: "Select a project directory",
-    });
-    if (typeof result === "string") {
-      selectedPath = result;
-    }
-  } catch {
+  if (window.electronAPI) {
+    selectedPath = await window.electronAPI.openDirectory();
+  } else {
     selectedPath = prompt("Enter the project path:");
   }
 

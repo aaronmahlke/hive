@@ -1,0 +1,25 @@
+appId: com.hive.app
+productName: Hive
+directories:
+  output: dist-electron
+  buildResources: build
+files:
+  - .output/public/**/*
+  - electron/**/*.cjs
+  - "!**/node_modules/**/*"
+extraMetadata:
+  main: electron/main.cjs
+mac:
+  icon: build/icon.icns
+  target:
+    - dmg
+    - zip
+  category: public.app-category.developer-tools
+linux:
+  icon: build
+  target:
+    - AppImage
+win:
+  icon: build/icon.ico
+  target:
+    - nsis

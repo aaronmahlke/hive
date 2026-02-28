@@ -2,15 +2,15 @@
   "name": "hive",
   "type": "module",
   "private": true,
+  "main": "electron/main.cjs",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
+    "electron:dev": "concurrently \"nuxt dev\" \"wait-on http://localhost:3200 && electron .\"",
+    "electron:build": "nuxt generate && electron-builder",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
@@ -23,8 +23,6 @@
     "@opencode-ai/sdk": "^1.2.15",
     "@pierre/diffs": "^1.0.11",
     "@tailwindcss/vite": "^4.2.1",
-    "@tauri-apps/api": "^2.10.1",
-    "@tauri-apps/plugin-dialog": "^2.6.0",
     "@vueuse/core": "^14.2.1",
     "@vueuse/nuxt": "^14.2.1",
     "better-sqlite3": "^12.6.2",
@@ -44,9 +42,12 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.10.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/dompurify": "^3.2.0",
-    "drizzle-kit": "^0.31.9"
+    "concurrently": "^9.1.2",
+    "drizzle-kit": "^0.31.9",
+    "electron": "^35.1.5",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.3"
   }
 }

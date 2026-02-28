@@ -19,7 +19,6 @@ const isDiffOpen = computed(() => !!selectedFile.value);
       <div
         class="flex-1 self-stretch"
         style="-webkit-app-region: drag"
-        data-tauri-drag-region
       />
 
       <div class="flex shrink-0 items-center gap-1 pr-2">
