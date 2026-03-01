@@ -18,8 +18,7 @@ import {
 } from "@heroicons/vue/16/solid";
 
 type DynamicToolPart = {
-  type: "dynamic-tool" | string;
-  toolName: string;
+  type: string;
   toolCallId: string;
   state: string;
   input?: any;
@@ -127,20 +126,21 @@ const toolDefs: Record<string, ToolDef> = {
   },
 };
 
-const def = computed(() => toolDefs[tool.toolName] || {
+// Derive the lookup key by stripping the "tool-" prefix from the type field
+// e.g. "tool-bash" → "bash", "tool-textEditor" → "textEditor"
+const toolName = computed(() => tool.type.replace(/^tool-/, ""));
+
+const def = computed(() => toolDefs[toolName.value] || {
   icon: CodeBracketIcon,
-  kind: tool.toolName,
-  describe: () => ({ label: tool.toolName }),
+  // For unknown tools, use the derived name as the kind badge and no label.
+  kind: toolName.value,
+  describe: () => ({ label: "" }),
 });
 
 const described = computed(() => def.value.describe(tool.input));
 const activeIcon = computed(() => described.value.icon || def.value.icon);
 const kind = computed(() => def.value.kind);
-// Only show label when it adds information beyond the kind badge
-const label = computed(() => {
-  const raw = described.value.label || tool.toolName;
-  return raw !== kind.value ? raw : "";
-});
+const label = computed(() => described.value.label || "");
 
 const isDone   = computed(() => tool.state === "output-available");
 const hasError = computed(() => tool.state === "output-error");
@@ -211,9 +211,9 @@ const output = computed(() => {
       {{ tool.errorText }}
     </div>
     <pre
-      v-else-if="output || (tool.toolName === 'bash' && tool.input?.command)"
+      v-else-if="output || (toolName === 'bash' && tool.input?.command)"
       class="bg-terminal text-terminal-text max-h-48 overflow-auto p-2.5 font-mono text-copy leading-relaxed"
-    ><template v-if="tool.toolName === 'bash' && tool.input?.command"><span class="text-terminal-dim">$</span> {{ tool.input.command }}
+    ><template v-if="toolName === 'bash' && tool.input?.command"><span class="text-terminal-dim">$</span> {{ tool.input.command }}
 </template>{{ output }}</pre>
     <div v-else-if="isPending" class="text-copy text-tertiary p-2 italic">Running…</div>
     <div v-else class="text-copy text-tertiary p-2 italic">No output</div>
