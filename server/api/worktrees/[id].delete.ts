@@ -1,8 +1,7 @@
 import { db } from "../../database";
-import { worktrees, projects } from "../../database/schema";
+import { worktrees } from "../../database/schema";
 import { eq } from "drizzle-orm";
 import { removeWorktree } from "../../services/worktree";
-import { stopOpenCodeServer } from "../../services/process";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -21,9 +20,6 @@ export default defineEventHandler(async (event) => {
   const project = await db.query.projects.findFirst({
     where: { id: worktree.projectId },
   });
-
-  // Stop OpenCode server
-  stopOpenCodeServer(worktree.path);
 
   // Remove git worktree
   if (project) {

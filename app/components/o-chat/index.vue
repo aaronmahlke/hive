@@ -1,10 +1,4 @@
 <script setup lang="ts">
-import { useDropZone } from "@vueuse/core";
-
-type Mode = "build" | "plan";
-
-type AttachedFile = { name: string; mime: string; url: string };
-
 type Props = {
   projectId: string;
   placeholder?: string;
@@ -13,66 +7,33 @@ type Props = {
 const { projectId, placeholder } = defineProps<Props>();
 
 const store = useHiveStore();
-const { turns, messages, isWorking, pendingQuestions, modelName, connected, initializing } = store.project(projectId);
+const {
+  messages,
+  isLoading,
+  pendingQuestions,
+  connected,
+  initializing,
+  sendMessage,
+  stop,
+} = store.project(projectId);
 
-const mode = ref<Mode>("build");
 const scrollArea = useTemplateRef("scrollArea");
-const messageQueue = ref<{ text: string; files: AttachedFile[] }[]>([]);
-const chatInput = useTemplateRef<{ focus: () => void; attachFiles: (files: File[]) => Promise<void> }>("chatInput");
-const inputPanel = useTemplateRef("inputPanel");
-const { isOverDropZone } = useDropZone(inputPanel, {
-  multiple: true,
-  onDrop: async (files) => {
-    if (!supportsAttachment.value || !files) return;
-    await chatInput.value?.attachFiles(files);
-  },
-});
-
-// Derive attachment support from the current model's capabilities
-const { data: providers } = await useFetch(`/api/projects/${projectId}/providers`);
-function allModels(): any[] {
-  const result: any[] = [];
-  for (const provider of (providers.value as any)?.providers ?? []) {
-    // models is an object keyed by model id, not an array
-    for (const model of Object.values(provider.models ?? {})) {
-      result.push(model);
-    }
-  }
-  return result;
-}
-
-function modelSupportsAttachment(model: any) {
-  return !!(model.capabilities?.attachment || model.capabilities?.input?.image);
-}
-
-const supportsAttachment = computed(() => {
-  if (!providers.value) return false;
-  const models = allModels();
-  // If we know the current model, strip optional provider prefix and check it specifically
-  if (modelName.value) {
-    const bareId = modelName.value.includes("/")
-      ? modelName.value.split("/").slice(1).join("/")
-      : modelName.value;
-    const match = models.find((m) => m.id === bareId || m.id === modelName.value);
-    if (match) return modelSupportsAttachment(match);
-  }
-  // No model known yet — show if any available model supports attachment
-  return models.some(modelSupportsAttachment);
-});
+const messageQueue = ref<string[]>([]);
+const chatInput = useTemplateRef<{ focus: () => void }>("chatInput");
 
 // Auto-dequeue when agent finishes
-watch(isWorking, (working, wasWorking) => {
-  if (wasWorking && !working && messageQueue.value.length > 0) {
+watch(isLoading, (loading, wasLoading) => {
+  if (wasLoading && !loading && messageQueue.value.length > 0) {
     const next = messageQueue.value.shift()!;
-    store.sendPrompt(projectId, next.text, { agent: mode.value }, next.files);
+    sendMessage(next);
   }
 });
 
-function handleSend({ text, files }: { text: string; files: AttachedFile[] }) {
-  if (isWorking.value) {
-    messageQueue.value.push({ text, files });
+function handleSend(text: string) {
+  if (isLoading.value) {
+    messageQueue.value.push(text);
   } else {
-    store.sendPrompt(projectId, text, { agent: mode.value }, files);
+    sendMessage(text);
     stickToBottom.value = true;
     scrollToBottom();
   }
@@ -83,7 +44,7 @@ function removeFromQueue(index: number) {
 }
 
 function handleAbort() {
-  store.abort(projectId);
+  stop();
 }
 
 function handleResolveQuestion(signalId: string, answer: string) {
@@ -140,7 +101,7 @@ watch(initializing, (val, old) => {
   <div class="flex h-full min-h-0 flex-col">
     <div ref="scrollArea" class="min-h-0 flex-1 overflow-y-auto" @scroll="onScroll">
       <div
-        v-if="!turns.length && !isWorking"
+        v-if="!messages.length && !isLoading"
         class="flex h-full items-center justify-center"
       >
         <p class="text-copy text-tertiary">
@@ -150,11 +111,10 @@ watch(initializing, (val, old) => {
 
       <div v-else class="mx-auto max-w-3xl">
         <OChatTurn
-          v-for="(turn, i) in turns"
-          :key="turn.userMessage.info.id"
-          :user-message="turn.userMessage"
-          :assistant-messages="turn.assistantMessages"
-          :is-working="isWorking && i === turns.length - 1"
+          v-for="msg in messages"
+          :key="msg.id"
+          :message="msg"
+          :is-working="isLoading && msg === messages[messages.length - 1] && msg.role === 'assistant'"
           @abort="handleAbort"
         />
       </div>
@@ -162,7 +122,7 @@ watch(initializing, (val, old) => {
 
     <div class="shrink-0">
       <div class="mx-auto max-w-3xl px-4 pb-3">
-          <div ref="inputPanel" class="bg-base-2 p-0.5">
+        <div class="bg-base-2 p-0.5">
           <OChatQuestion
             v-for="q in pendingQuestions"
             :key="q.id"
@@ -180,19 +140,14 @@ watch(initializing, (val, old) => {
             @remove="removeFromQueue"
           />
 
-            <div class="bg-base-3">
+          <div class="bg-base-3">
             <OChatInput
               ref="chatInput"
               :disabled="!connected"
               :placeholder="placeholder || 'Send a message...'"
-              :is-working
-              :model-name="modelName"
-              :mode
-              :supports-attachment="supportsAttachment"
-              :is-dragging="isOverDropZone && supportsAttachment"
+              :is-working="isLoading"
               @send="handleSend"
               @abort="handleAbort"
-              @update:mode="mode = $event"
             />
           </div>
         </div>

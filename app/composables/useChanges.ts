@@ -241,6 +241,7 @@ export function useChanges() {
     if (!id || !unresolvedComments.value.length) return;
 
     const store = useHiveStore();
+    const { sendMessage } = store.project(id);
 
     const lines = ["Please address the following review feedback:\n"];
 
@@ -267,7 +268,7 @@ export function useChanges() {
       "---\nAfter making changes, let me know when you're ready for another review.",
     );
 
-    store.sendPrompt(id, lines.join("\n"));
+    sendMessage(lines.join("\n"));
 
     const ids = unresolvedComments.value.map((c) => c.id);
     try {

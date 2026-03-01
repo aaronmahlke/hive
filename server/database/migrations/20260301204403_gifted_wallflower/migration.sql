@@ -20,6 +20,17 @@ CREATE TABLE `dev_profile` (
 	`created_at` integer NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE `messages` (
+	`id` text PRIMARY KEY,
+	`session_id` text,
+	`project_id` text NOT NULL,
+	`role` text NOT NULL,
+	`content` text NOT NULL,
+	`created_at` integer NOT NULL,
+	CONSTRAINT `fk_messages_session_id_sessions_id_fk` FOREIGN KEY (`session_id`) REFERENCES `sessions`(`id`),
+	CONSTRAINT `fk_messages_project_id_projects_id_fk` FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `projects` (
 	`id` text PRIMARY KEY,
 	`name` text NOT NULL,
@@ -58,11 +69,14 @@ CREATE TABLE `reviews` (
 --> statement-breakpoint
 CREATE TABLE `sessions` (
 	`id` text PRIMARY KEY,
+	`project_id` text NOT NULL,
 	`worktree_id` text,
-	`opencode_session_id` text,
+	`parent_session_id` text,
 	`role` text NOT NULL,
+	`model_preference` text DEFAULT 'sonnet' NOT NULL,
 	`status` text DEFAULT 'idle' NOT NULL,
 	`created_at` integer NOT NULL,
+	CONSTRAINT `fk_sessions_project_id_projects_id_fk` FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`),
 	CONSTRAINT `fk_sessions_worktree_id_worktrees_id_fk` FOREIGN KEY (`worktree_id`) REFERENCES `worktrees`(`id`)
 );
 --> statement-breakpoint
@@ -84,8 +98,6 @@ CREATE TABLE `worktrees` (
 	`branch_name` text NOT NULL,
 	`path` text NOT NULL,
 	`status` text DEFAULT 'active' NOT NULL,
-	`opencode_port` integer,
-	`opencode_pid` integer,
 	`dev_server_active` integer DEFAULT false NOT NULL,
 	`linear_issue_id` text,
 	`linear_issue_identifier` text,

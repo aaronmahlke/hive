@@ -1,10 +1,8 @@
 import { db } from "../../database";
 import { worktrees, projects } from "../../database/schema";
-import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createWorktree } from "../../services/worktree";
-import { allocatePort } from "../../services/port-allocator";
-import { installDeps, startOpenCodeServer } from "../../services/process";
+import { installDeps } from "../../services/process";
 import { z } from "zod/v4";
 
 const bodySchema = z.object({
@@ -29,9 +27,6 @@ export default defineEventHandler(async (event) => {
   // Create git worktree
   const worktreePath = await createWorktree(project.path, body.branchName);
 
-  // Allocate a port for the OpenCode server
-  const port = await allocatePort();
-
   const id = nanoid();
 
   // Save to database
@@ -43,7 +38,6 @@ export default defineEventHandler(async (event) => {
       branchName: body.branchName,
       path: worktreePath,
       status: "active",
-      opencodePort: port,
       linearIssueId: body.linearIssueId,
       linearIssueIdentifier: body.linearIssueIdentifier,
     })
@@ -63,14 +57,5 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Start OpenCode server
-  const pid = startOpenCodeServer(worktreePath, port);
-
-  // Update PID in database
-  await db
-    .update(worktrees)
-    .set({ opencodePid: pid })
-    .where(eq(worktrees.id, id));
-
-  return { ...worktree, opencodePid: pid };
+  return worktree;
 });

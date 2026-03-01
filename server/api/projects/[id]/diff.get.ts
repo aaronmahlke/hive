@@ -1,12 +1,6 @@
 import { db } from "../../../database";
 import { projects } from "../../../database/schema";
-import { eq } from "drizzle-orm";
-import { parseConfig } from "../../../utils/parse-config";
-import { z } from "zod/v4";
-
-const querySchema = z.object({
-  sessionId: z.string().min(1),
-});
+import simpleGit from "simple-git";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -15,29 +9,23 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "id is required" });
   }
 
-  const { sessionId } = await getValidatedQuery(event, querySchema.parse);
-
   const project = await db.query.projects.findFirst({
     where: { id },
   });
 
   if (!project) {
-    return [];
+    throw createError({ statusCode: 404, message: "Project not found" });
   }
 
-  const config = parseConfig(project.configOverride);
-  const port = config.opencodePort;
-
-  if (!port) {
-    return [];
-  }
+  const git = simpleGit(project.path);
 
   try {
-    const res = await fetch(
-      `http://localhost:${port}/session/${sessionId}/diff`,
-    );
-    return await res.json();
+    let diff = await git.diff(["HEAD"]);
+    if (!diff) {
+      diff = await git.diff(["--cached"]);
+    }
+    return { diff: diff || "" };
   } catch {
-    return [];
+    return { diff: "" };
   }
 });

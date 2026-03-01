@@ -60,7 +60,7 @@ function closeTab(projectId: string, e: Event) {
   e.preventDefault();
   e.stopPropagation();
 
-  // Disconnect WebSocket and clean up state for this project
+  // Clean up chat state for this project
   store.deactivate(projectId);
 
   openTabs.value = openTabs.value.filter((id) => id !== projectId);

@@ -3,7 +3,7 @@
 /**
  * Hive Signal MCP Server
  *
- * A local MCP server that OpenCode worker agents use to communicate
+ * A local MCP server that worker agents use to communicate
  * back to the Hive orchestrator. Implements the signal tool for:
  * - question: Ask the user a question (blocks until answered)
  * - done: Signal task completion
@@ -15,7 +15,7 @@
  * - Writes signals to the Hive API (HTTP POST to the Nuxt server)
  * - For questions, polls until the user answers via the Hive UI
  *
- * Usage (spawned by OpenCode as a local MCP):
+ * Usage (spawned as a local MCP):
  *   HIVE_API_URL=http://localhost:3100 HIVE_SESSION_ID=xxx node signal-server.ts
  */
 

@@ -183,12 +183,6 @@ async function toggleDevServer(wt: any) {
                 :title="wt.devServerActive ? 'Stop dev server' : 'Start dev server on :3000'"
                 @click.stop="toggleDevServer(wt)"
               />
-              <span
-                v-if="wt.opencodePort"
-                class="text-copy text-tertiary"
-              >
-                :{{ wt.opencodePort }}
-              </span>
             </div>
           </div>
         </OHover>

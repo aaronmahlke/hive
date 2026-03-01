@@ -8,12 +8,17 @@ const projectId = computed(() => route.params.id as string);
 const { data: projectData } = await useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
-const { connected, initializing, error, port } = store.project(projectId.value);
+const { connected, initializing, error, modelPreference } = store.project(projectId.value);
 
 // Activate on first visit - store handles dedup
 onMounted(() => {
   store.activate(projectId.value);
 });
+
+function toggleModel() {
+  const next = modelPreference.value === "opus" ? "sonnet" : "opus";
+  store.setModel(projectId.value, next);
+}
 
 // Changes overlay state (shared with OChangesPanel via composable)
 const {
@@ -48,15 +53,18 @@ const isSelectedFileViewed = computed(() =>
         >
           {{ projectData.pkgManager }}
         </span>
-        <span v-if="port" class="text-copy text-tertiary font-mono">
-          :{{ port }}
-        </span>
+        <OButton
+          variant="outline"
+          @click="toggleModel"
+        >
+          {{ modelPreference === "opus" ? "Opus" : "Sonnet" }}
+        </OButton>
       </template>
     </OHeader>
 
     <div v-if="initializing" class="flex flex-1 items-center justify-center gap-2">
       <ArrowPathIcon class="text-tertiary size-4 shrink-0 animate-spin" />
-      <span class="text-copy text-tertiary">Starting agent...</span>
+      <span class="text-copy text-tertiary">Connecting...</span>
     </div>
 
     <div v-else-if="error" class="flex flex-1 items-center justify-center">
@@ -64,7 +72,6 @@ const isSelectedFileViewed = computed(() =>
         <p class="text-copy text-danger">{{ error }}</p>
         <OButton
           variant="primary"
-         
           class="mt-3"
           @click="store.activate(projectId)"
         >

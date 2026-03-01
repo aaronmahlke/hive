@@ -7,7 +7,6 @@ import {
   DocumentPlusIcon,
   PencilSquareIcon,
   GlobeAltIcon,
-  ListBulletIcon,
   ClipboardDocumentListIcon,
   CpuChipIcon,
   CheckCircleIcon,
@@ -16,26 +15,21 @@ import {
 } from "@heroicons/vue/16/solid";
 import { ArrowPathIcon } from "@heroicons/vue/16/solid";
 
-type ToolPart = {
-  type: string;
-  tool: string;
-  callID?: string;
-  state: {
-    status: "pending" | "running" | "completed" | "error";
-    input?: any;
-    output?: string;
-    title?: string;
-    metadata?: any;
-    error?: string;
-    time?: { start?: number; end?: number };
-  };
+type DynamicToolPart = {
+  type: "dynamic-tool" | string;
+  toolName: string;
+  toolCallId: string;
+  state: string;
+  input?: any;
+  output?: any;
+  errorText?: string;
 };
 
 type Props = {
-  part: ToolPart;
+  tool: DynamicToolPart;
 };
 
-const { part } = defineProps<Props>();
+const { tool } = defineProps<Props>();
 const expanded = ref(false);
 
 type ToolDef = {
@@ -45,34 +39,37 @@ type ToolDef = {
 };
 
 const toolDefs: Record<string, ToolDef> = {
-  read: { icon: EyeIcon, name: "Read", subtitle: (i) => i?.filePath || i?.path || "" },
-  edit: { icon: PencilSquareIcon, name: "Edit", subtitle: (i) => i?.filePath || i?.path || "" },
-  write: { icon: DocumentPlusIcon, name: "Write", subtitle: (i) => i?.filePath || i?.path || "" },
-  bash: { icon: CommandLineIcon, name: "Shell", subtitle: (i) => i?.description || (i?.command || "").slice(0, 80) },
-  glob: { icon: MagnifyingGlassIcon, name: "Glob", subtitle: (i) => i?.pattern || "" },
-  grep: { icon: MagnifyingGlassIcon, name: "Search", subtitle: (i) => i?.pattern || "" },
-  webfetch: { icon: GlobeAltIcon, name: "Fetch", subtitle: (i) => i?.url || "" },
-  websearch: { icon: GlobeAltIcon, name: "Web", subtitle: (i) => i?.query || "" },
-  codesearch: { icon: MagnifyingGlassIcon, name: "Code Search", subtitle: (i) => i?.query || "" },
-  list: { icon: ListBulletIcon, name: "List", subtitle: (i) => i?.path || "" },
+  bash: { icon: CommandLineIcon, name: "Shell", subtitle: (a) => a?.description || (a?.command || "").slice(0, 80) },
+  str_replace_based_edit_tool: { icon: PencilSquareIcon, name: "Editor", subtitle: (a) => a?.path || a?.file_path || "" },
+  read: { icon: EyeIcon, name: "Read", subtitle: (a) => a?.filePath || a?.path || "" },
+  write: { icon: DocumentPlusIcon, name: "Write", subtitle: (a) => a?.filePath || a?.path || "" },
+  glob: { icon: MagnifyingGlassIcon, name: "Glob", subtitle: (a) => a?.pattern || "" },
+  grep: { icon: MagnifyingGlassIcon, name: "Search", subtitle: (a) => a?.pattern || "" },
+  web_search: { icon: GlobeAltIcon, name: "Web Search", subtitle: (a) => a?.query || "" },
+  web_fetch: { icon: GlobeAltIcon, name: "Web Fetch", subtitle: (a) => a?.url || "" },
+  code_execution: { icon: CpuChipIcon, name: "Code Exec", subtitle: (a) => (a?.code || "").slice(0, 60) },
+  spawn_agent: { icon: CpuChipIcon, name: "Sub-Agent", subtitle: (a) => a?.description || a?.task || "" },
   todowrite: { icon: ClipboardDocumentListIcon, name: "Todos", subtitle: () => "" },
-  task: { icon: CpuChipIcon, name: "Agent", subtitle: (i) => i?.description || "" },
 };
 
-const def = computed(() => toolDefs[part.tool] || { icon: CodeBracketIcon, name: part.tool, subtitle: () => "" });
-const subtitle = computed(() => def.value.subtitle(part.state?.input) || part.state?.title || "");
+const def = computed(() =>
+  toolDefs[tool.toolName] || { icon: CodeBracketIcon, name: tool.toolName, subtitle: () => "" },
+);
 
-const duration = computed(() => {
-  const t = part.state?.time;
-  if (!t?.start || !t?.end) return null;
-  const ms = t.end - t.start;
-  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
-});
+const subtitle = computed(() => def.value.subtitle(tool.input) || "");
+
+const isDone = computed(() => tool.state === "output-available");
+const hasError = computed(() => tool.state === "output-error");
+const isPending = computed(() =>
+  tool.state === "input-streaming" || tool.state === "input-available" || tool.state === "approval-requested",
+);
 
 const output = computed(() => {
-  const o = part.state?.output;
-  if (!o) return "";
-  return o.length > 3000 ? o.slice(0, 3000) + "\n... (truncated)" : o;
+  if (!isDone.value) return "";
+  const r = tool.output;
+  if (!r) return "";
+  const text = typeof r === "string" ? r : JSON.stringify(r, null, 2);
+  return text.length > 3000 ? text.slice(0, 3000) + "\n... (truncated)" : text;
 });
 </script>
 
@@ -87,20 +84,19 @@ const output = computed(() => {
       :is="def.icon"
       class="size-4 shrink-0"
       :class="{
-        'text-tertiary': part.state?.status === 'completed',
-        'text-accent': part.state?.status === 'running' || part.state?.status === 'pending',
-        'text-danger': part.state?.status === 'error',
+        'text-tertiary': isDone && !hasError,
+        'text-accent': isPending,
+        'text-danger': hasError,
       }"
     />
     <span class="text-copy text-secondary shrink-0">{{ def.name }}</span>
     <span class="text-copy text-tertiary min-w-0 flex-1 truncate font-mono">{{ subtitle }}</span>
-    <span v-if="duration" class="text-copy text-tertiary shrink-0 font-mono">{{ duration }}</span>
     <ArrowPathIcon
-      v-if="part.state?.status === 'running' || part.state?.status === 'pending'"
+      v-if="isPending"
       class="text-accent size-4 shrink-0 animate-spin"
     />
-    <CheckCircleIcon v-else-if="part.state?.status === 'completed'" class="text-success size-4 shrink-0" />
-    <ExclamationCircleIcon v-else-if="part.state?.status === 'error'" class="text-danger size-4 shrink-0" />
+    <CheckCircleIcon v-else-if="isDone && !hasError" class="text-success size-4 shrink-0" />
+    <ExclamationCircleIcon v-else-if="hasError" class="text-danger size-4 shrink-0" />
     <ChevronRightIcon
       class="text-tertiary size-4 shrink-0 transition-transform"
       :class="expanded ? 'rotate-90' : ''"
@@ -108,14 +104,15 @@ const output = computed(() => {
   </button>
 
   <div v-if="expanded" class="mb-1 ml-6 mr-2 mt-0.5">
-    <div v-if="part.state?.status === 'error' && part.state?.error" class="text-copy text-danger bg-danger-subtle p-2">
-      {{ part.state.error }}
+    <div v-if="hasError && tool.errorText" class="text-copy text-danger bg-danger-subtle p-2">
+      {{ tool.errorText }}
     </div>
     <pre
-      v-else-if="output || (part.tool === 'bash' && part.state?.input?.command)"
+      v-else-if="output || (tool.toolName === 'bash' && tool.input?.command)"
       class="bg-terminal text-terminal-text max-h-48 overflow-auto p-2.5 font-mono text-copy leading-relaxed"
-    ><template v-if="part.tool === 'bash' && part.state?.input?.command"><span class="text-terminal-dim">$</span> {{ part.state.input.command }}
+    ><template v-if="tool.toolName === 'bash' && tool.input?.command"><span class="text-terminal-dim">$</span> {{ tool.input.command }}
 </template>{{ output }}</pre>
+    <div v-else-if="isPending" class="text-copy text-tertiary p-2 italic">Running...</div>
     <div v-else class="text-copy text-tertiary p-2 italic">No output</div>
   </div>
 </template>

@@ -1,40 +1,28 @@
 <script setup lang="ts">
 import {
-  ChevronDownIcon,
   ClipboardIcon,
   CheckIcon,
   StopIcon,
-  DocumentIcon,
 } from "@heroicons/vue/16/solid";
 import { ArrowPathIcon } from "@heroicons/vue/20/solid";
+import type { UIMessage } from "ai";
 
-type Part = {
-  type: string;
-  id?: string;
-  text?: string;
-  tool?: string;
-  callID?: string;
-  state?: any;
-  [key: string]: any;
+type DynamicToolPart = {
+  type: "dynamic-tool";
+  toolName: string;
+  toolCallId: string;
+  state: string;
+  input?: any;
+  output?: any;
+  errorText?: string;
 };
 
-type Message = {
-  info: {
-    role: "user" | "assistant";
-    id: string;
-    sessionID: string;
-    time?: { created: number };
-    modelID?: string;
-    providerID?: string;
-    agent?: string;
-    [key: string]: any;
-  };
-  parts: Part[];
-};
+type RenderBlock =
+  | { kind: "text"; text: string; id: string }
+  | { kind: "tools"; tools: DynamicToolPart[]; id: string };
 
 type Props = {
-  userMessage: Message;
-  assistantMessages: Message[];
+  message: UIMessage;
   isWorking?: boolean;
 };
 
@@ -42,41 +30,47 @@ type Emits = {
   abort: [];
 };
 
-type RenderBlock =
-  | { kind: "text"; text: string; id: string }
-  | { kind: "tools"; tools: Part[]; id: string };
-
-const { userMessage, assistantMessages, isWorking = false } = defineProps<Props>();
+const { message, isWorking = false } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const userText = computed(() =>
-  userMessage.parts
-    .filter((p) => p.type === "text" && p.text)
-    .map((p) => p.text!)
-    .join("\n"),
-);
+const isUser = computed(() => message.role === "user");
 
-const userFiles = computed(() =>
-  userMessage.parts.filter((p) => p.type === "file"),
-);
+const userText = computed(() => {
+  if (!isUser.value) return "";
+  // User messages have text parts, or fall back to joining all text
+  const textParts = (message.parts ?? []).filter((p) => p.type === "text");
+  if (textParts.length) {
+    return textParts.map((p) => (p as any).text).join("\n");
+  }
+  return "";
+});
 
-// Build sequential render blocks from all assistant messages.
+// Build sequential render blocks from assistant message parts.
 // Consecutive tool calls are grouped into a single collapsible block.
 // Text parts are individual blocks between tool groups.
 const blocks = computed<RenderBlock[]>(() => {
+  if (isUser.value) return [];
+
   const result: RenderBlock[] = [];
 
-  for (const msg of assistantMessages) {
-    for (const part of msg.parts) {
-      if (part.type === "text" && part.text) {
-        result.push({ kind: "text", text: part.text, id: part.id || `text-${msg.info.id}-${result.length}` });
-      } else if (part.type === "tool") {
-        const last = result[result.length - 1];
-        if (last?.kind === "tools") {
-          last.tools.push(part);
-        } else {
-          result.push({ kind: "tools", tools: [part], id: part.callID || `tools-${msg.info.id}-${result.length}` });
-        }
+  for (const part of message.parts ?? []) {
+    if (part.type === "text" && (part as any).text) {
+      result.push({
+        kind: "text",
+        text: (part as any).text,
+        id: `text-${message.id}-${result.length}`,
+      });
+    } else if (part.type === "dynamic-tool" || (part.type as string).startsWith("tool-")) {
+      const toolPart = part as unknown as DynamicToolPart;
+      const last = result[result.length - 1];
+      if (last?.kind === "tools") {
+        last.tools.push(toolPart);
+      } else {
+        result.push({
+          kind: "tools",
+          tools: [toolPart],
+          id: toolPart.toolCallId || `tools-${message.id}-${result.length}`,
+        });
       }
     }
   }
@@ -91,26 +85,23 @@ const allText = computed(() =>
     .join("\n\n"),
 );
 
-const totalToolCount = computed(() =>
-  blocks.value.reduce((n, b) => n + (b.kind === "tools" ? b.tools.length : 0), 0),
-);
-
 const statusText = computed(() => {
   if (!isWorking) return "";
-  for (let i = assistantMessages.length - 1; i >= 0; i--) {
-    for (let j = assistantMessages[i].parts.length - 1; j >= 0; j--) {
-      const part = assistantMessages[i].parts[j];
-      if (part.type === "tool") {
-        switch (part.tool) {
-          case "read": return "Gathering context";
-          case "glob": case "grep": case "codesearch": return "Searching codebase";
-          case "edit": case "write": return "Making edits";
-          case "bash": return "Running command";
-          case "webfetch": case "websearch": return "Searching the web";
-          case "task": return "Delegating work";
-          case "todowrite": return "Planning";
-          default: return "Working";
-        }
+
+  // Check the last tool part for a status hint
+  for (let i = (message.parts ?? []).length - 1; i >= 0; i--) {
+    const part = message.parts[i] as any;
+    if (part.type === "dynamic-tool" || (part.type as string)?.startsWith("tool-")) {
+      const toolName = part.toolName;
+      switch (toolName) {
+        case "read": return "Gathering context";
+        case "glob": case "grep": case "codesearch": return "Searching codebase";
+        case "str_replace_based_edit_tool": case "write": return "Making edits";
+        case "bash": return "Running command";
+        case "web_fetch": case "web_search": return "Searching the web";
+        case "spawn_agent": return "Delegating work";
+        case "code_execution": return "Running code";
+        default: return "Working";
       }
     }
   }
@@ -155,33 +146,18 @@ async function copyResponse() {
 </script>
 
 <template>
-  <div class="border-edge border-b py-5 last:border-b-0">
-    <!-- User message -->
+  <!-- User message -->
+  <div v-if="isUser" class="border-edge border-b py-5 last:border-b-0">
     <div class="px-5 pb-3">
       <div class="bg-surface-1 inline-block max-w-full px-4 py-2.5">
-        <!-- Attached images -->
-        <div v-if="userFiles.length" class="mb-2 flex flex-wrap gap-2">
-          <template v-for="file in userFiles" :key="file.id ?? file.url">
-            <img
-              v-if="file.mime?.startsWith('image/')"
-              :src="file.url"
-              :alt="file.filename ?? 'attachment'"
-              class="max-h-48 max-w-xs object-contain"
-            />
-            <div
-              v-else
-              class="border-edge flex items-center gap-1.5 border px-2 py-1"
-            >
-              <DocumentIcon class="text-tertiary size-4 shrink-0" />
-              <span class="text-copy text-secondary">{{ file.filename }}</span>
-            </div>
-          </template>
-        </div>
-        <p v-if="userText" class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
+        <p class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
       </div>
     </div>
+  </div>
 
-    <!-- Working indicator -->
+  <!-- Assistant message -->
+  <div v-else class="border-edge border-b py-5 last:border-b-0">
+    <!-- Working indicator when no blocks yet -->
     <div v-if="isWorking && !blocks.length" class="px-5 py-1">
       <div class="flex items-center gap-1.5">
         <ArrowPathIcon class="text-accent size-4 animate-spin" />
@@ -191,7 +167,6 @@ async function copyResponse() {
         </span>
         <OButton
           variant="transparent"
-         
           :icon-left="StopIcon"
           class="ml-auto hover:text-danger"
           title="Stop (Escape)"
@@ -236,7 +211,6 @@ async function copyResponse() {
         </span>
         <OButton
           variant="transparent"
-         
           :icon-left="StopIcon"
           class="ml-auto hover:text-danger"
           title="Stop (Escape)"
