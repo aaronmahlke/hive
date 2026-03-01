@@ -97,10 +97,14 @@ const totalDeletions = computed(() => {
         @update-comment="(id: string, content: string) => emit('update-comment', id, content)"
       />
 
-      <OChangesFileViewer
+      <OFileViewer
         v-else-if="hasContent"
         :content="props.fileContent!"
         :file-path="props.filePath"
+        :comments="props.comments"
+        @add-comment="emit('add-comment', $event)"
+        @delete-comment="emit('delete-comment', $event)"
+        @update-comment="(id: string, content: string) => emit('update-comment', id, content)"
       />
 
       <div

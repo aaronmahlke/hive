@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   CodeBracketIcon,
+  FolderIcon,
   BellAlertIcon,
   PlusIcon,
   PlayIcon,
@@ -12,6 +13,12 @@ const projectId = computed(() => {
   if (route.params.id) return route.params.id as string;
   return null;
 });
+
+type SidebarView = "worktrees" | "files";
+const activeView = ref<SidebarView>("worktrees");
+
+const { tree } = useFileTree();
+const { selectedFile, selectFile } = useChanges();
 
 const { data: worktreeList, refresh: refreshWorktrees } = await useFetch(
   "/api/worktrees",
@@ -84,9 +91,28 @@ async function toggleDevServer(wt: any) {
 
 <template>
   <div class="flex h-full flex-col">
-    <OHeader :icon="CodeBracketIcon" title="Worktrees" borderless>
+    <OHeader borderless>
+      <template #leading>
+        <div class="flex items-center gap-0.5">
+          <OButton
+            variant="transparent"
+            :icon-left="CodeBracketIcon"
+            title="Worktrees"
+            :class="activeView === 'worktrees' ? 'text-primary' : 'text-tertiary'"
+            @click="activeView = 'worktrees'"
+          />
+          <OButton
+            variant="transparent"
+            :icon-left="FolderIcon"
+            title="File tree"
+            :class="activeView === 'files' ? 'text-primary' : 'text-tertiary'"
+            @click="activeView = 'files'"
+          />
+        </div>
+      </template>
       <template #trailing>
         <OButton
+          v-if="activeView === 'worktrees'"
           variant="transparent"
          
           :icon-left="PlusIcon"
@@ -96,7 +122,8 @@ async function toggleDevServer(wt: any) {
       </template>
     </OHeader>
 
-    <div class="flex-1 overflow-auto p-1.5">
+    <!-- Worktrees view -->
+    <div v-if="activeView === 'worktrees'" class="flex-1 overflow-auto p-1.5">
       <div v-if="showNewBranch" class="mb-1.5 px-1">
         <form @submit.prevent="createNewWorktree" class="flex gap-1">
           <OInput
@@ -162,6 +189,25 @@ async function toggleDevServer(wt: any) {
           </div>
         </OHover>
       </div>
+    </div>
+
+    <!-- File tree view -->
+    <div v-else class="flex-1 overflow-auto p-1.5">
+      <div
+        v-if="!projectId"
+        class="text-copy text-tertiary px-2 py-4 text-center"
+      >
+        Open a project first
+      </div>
+      <div v-else-if="!tree?.length" class="text-copy text-tertiary px-2 py-4 text-center">
+        No files
+      </div>
+      <OSidebarFileTree
+        v-else
+        :nodes="tree"
+        :selected-file="selectedFile"
+        @select="selectFile"
+      />
     </div>
 
     <div>
