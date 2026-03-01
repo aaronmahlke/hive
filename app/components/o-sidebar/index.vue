@@ -210,6 +210,7 @@ async function toggleDevServer(wt: any) {
       />
     </div>
 
+    <!-- Signals section hidden for now
     <div>
       <OHeader :icon="BellAlertIcon" title="Signals" borderless>
         <template #trailing>
@@ -239,5 +240,6 @@ async function toggleDevServer(wt: any) {
         </div>
       </div>
     </div>
+    -->
   </div>
 </template>

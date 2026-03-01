@@ -47,12 +47,6 @@ const isSelectedFileViewed = computed(() =>
       :title="projectData?.name ?? 'Project'"
     >
       <template #trailing>
-        <span
-          v-if="projectData?.pkgManager"
-          class="bg-surface-1 border-edge text-copy text-secondary border px-2 py-0.5"
-        >
-          {{ projectData.pkgManager }}
-        </span>
         <OButton
           variant="outline"
           :icon-left="TrashIcon"
