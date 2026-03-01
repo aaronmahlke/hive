@@ -2,7 +2,7 @@ import { db } from "../../database";
 import { worktrees, projects } from "../../database/schema";
 import { nanoid } from "nanoid";
 import { createWorktree } from "../../services/worktree";
-import { installDeps } from "../../services/process";
+import { installDeps } from "../../services/worktree";
 import { z } from "zod/v4";
 
 const bodySchema = z.object({

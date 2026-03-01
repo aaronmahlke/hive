@@ -4,8 +4,6 @@ import {
   FolderIcon,
   BellAlertIcon,
   PlusIcon,
-  PlayIcon,
-  StopIcon,
 } from "@heroicons/vue/16/solid";
 
 const route = useRoute();
@@ -81,15 +79,6 @@ async function createNewWorktree() {
   } finally {
     creating.value = false;
   }
-}
-
-async function toggleDevServer(wt: any) {
-  if (wt.devServerActive) {
-    await $fetch(`/api/worktrees/${wt.id}/dev-server`, { method: "DELETE" });
-  } else {
-    await $fetch(`/api/worktrees/${wt.id}/dev-server`, { method: "POST" });
-  }
-  await refreshWorktrees();
 }
 </script>
 
@@ -175,14 +164,6 @@ async function toggleDevServer(wt: any) {
               </span>
             </div>
             <div class="flex items-center gap-1.5">
-              <OButton
-                variant="transparent"
-               
-                :icon-left="wt.devServerActive ? StopIcon : PlayIcon"
-                :class="wt.devServerActive ? 'text-success' : ''"
-                :title="wt.devServerActive ? 'Stop dev server' : 'Start dev server on :3000'"
-                @click.stop="toggleDevServer(wt)"
-              />
             </div>
           </div>
         </OHover>

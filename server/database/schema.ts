@@ -23,9 +23,6 @@ export const worktrees = sqliteTable("worktrees", {
   status: text("status", { enum: ["active", "archived"] })
     .notNull()
     .default("active"),
-  devServerActive: integer("dev_server_active", { mode: "boolean" })
-    .notNull()
-    .default(false),
   linearIssueId: text("linear_issue_id"),
   linearIssueIdentifier: text("linear_issue_identifier"),
   createdAt: integer("created_at", { mode: "timestamp" })

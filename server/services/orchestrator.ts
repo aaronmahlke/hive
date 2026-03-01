@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { buildWorkerPrompt, buildReviewerPrompt } from "./prompt-builder";
 import { createWorktree } from "./worktree";
-import { installDeps } from "./process";
+import { installDeps } from "./worktree";
 import { runAgent } from "./agent";
 
 /**
