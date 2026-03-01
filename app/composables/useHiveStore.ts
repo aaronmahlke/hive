@@ -272,7 +272,7 @@ function handleWsMessage(projectId: string, event: MessageEvent) {
       const idx = s.pendingQuestions.findIndex((q) => q.id === msg.data.id);
       if (idx >= 0) {
         s.pendingQuestions[idx] = msg.data;
-      } else if (msg.data.type === "question" && !msg.data.resolved) {
+      } else if ((msg.data.type === "question" || msg.data.type === "blocked") && !msg.data.resolved) {
         s.pendingQuestions.push(msg.data);
       }
       break;

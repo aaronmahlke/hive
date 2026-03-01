@@ -6,30 +6,11 @@ type Props = {
   nodes: FileTreeNode[];
   depth?: number;
   selectedFile?: string | null;
+  collapsed: Set<string>;
 };
 
-const { nodes, depth = 0, selectedFile = null } = defineProps<Props>();
-const emit = defineEmits<{ select: [path: string] }>();
-
-function collectDirPaths(nodes: FileTreeNode[]): string[] {
-  const paths: string[] = [];
-  for (const node of nodes) {
-    if (node.type === "dir") {
-      paths.push(node.path);
-      paths.push(...collectDirPaths(node.children));
-    }
-  }
-  return paths;
-}
-
-const collapsed = ref<Set<string>>(new Set(collectDirPaths(nodes)));
-
-function toggle(path: string) {
-  const next = new Set(collapsed.value);
-  if (next.has(path)) next.delete(path);
-  else next.add(path);
-  collapsed.value = next;
-}
+const { nodes, depth = 0, selectedFile = null, collapsed } = defineProps<Props>();
+const emit = defineEmits<{ select: [path: string]; toggle: [path: string] }>();
 </script>
 
 <template>
@@ -42,7 +23,7 @@ function toggle(path: string) {
             type="button"
             class="flex w-full items-center gap-1 py-0.5 text-left outline-none"
             :style="{ paddingLeft: `${0.375 + depth * 0.875}rem` }"
-            @click="toggle(node.path)"
+            @click="emit('toggle', node.path)"
           >
             <ChevronRightIcon
               class="text-tertiary size-4 shrink-0 transition-transform"
@@ -60,7 +41,9 @@ function toggle(path: string) {
           :nodes="node.children"
           :depth="depth + 1"
           :selected-file="selectedFile"
+          :collapsed="collapsed"
           @select="emit('select', $event)"
+          @toggle="emit('toggle', $event)"
         />
       </template>
 

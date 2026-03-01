@@ -16,9 +16,48 @@ const selectedFileContent = ref<string | null>(null);
 const loadingFileContent = ref(false);
 const comments = ref<FileComment[]>([]);
 
+// Collapsed folder paths keyed by project ID, persisted via localStorage
+const collapsedByProject = useLocalStorage<Record<string, string[]>>("hive:collapsed-folders", {});
+
 export function useFileTree() {
   const route = useRoute();
   const projectId = computed(() => route.params.id as string | null);
+
+  const collapsedPaths = computed({
+    get(): Set<string> {
+      const id = projectId.value;
+      if (!id) return new Set();
+      return new Set(collapsedByProject.value[id] ?? []);
+    },
+    set(next: Set<string>) {
+      const id = projectId.value;
+      if (!id) return;
+      collapsedByProject.value = { ...collapsedByProject.value, [id]: [...next] };
+    },
+  });
+
+  function toggleFolder(path: string) {
+    const next = new Set(collapsedPaths.value);
+    if (next.has(path)) next.delete(path);
+    else next.add(path);
+    collapsedPaths.value = next;
+  }
+
+  function initCollapsed(nodes: FileTreeNode[]) {
+    const id = projectId.value;
+    if (!id || collapsedByProject.value[id] !== undefined) return;
+    function collect(nodes: FileTreeNode[]): string[] {
+      const paths: string[] = [];
+      for (const node of nodes) {
+        if (node.type === "dir") {
+          paths.push(node.path);
+          paths.push(...collect(node.children));
+        }
+      }
+      return paths;
+    }
+    collapsedByProject.value = { ...collapsedByProject.value, [id]: collect(nodes) };
+  }
 
   // ── Tree ────────────────────────────────────────────────────────────────
   const { data: treeData, refresh: refreshTree } = useFetch(
@@ -144,5 +183,8 @@ export function useFileTree() {
     addComment,
     deleteComment,
     updateComment,
+    collapsedPaths,
+    toggleFolder,
+    initCollapsed,
   };
 }

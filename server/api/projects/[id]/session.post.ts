@@ -11,7 +11,7 @@ const bodySchema = z.object({
 export default defineEventHandler(async (event) => {
   const t0 = Date.now();
   const id = getRouterParam(event, "id");
-  const body = await readValidatedBody(event, bodySchema.parse);
+  const body = await readValidatedBody(event, (v) => bodySchema.parse(v ?? {}));
 
   if (!id) {
     throw createError({ statusCode: 400, message: "id is required" });

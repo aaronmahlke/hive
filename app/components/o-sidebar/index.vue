@@ -15,10 +15,14 @@ const projectId = computed(() => {
 });
 
 type SidebarView = "worktrees" | "files";
-const activeView = ref<SidebarView>("worktrees");
+const activeView = useLocalStorage<SidebarView>("hive:sidebar-view", "worktrees");
 
-const { tree } = useFileTree();
+const { tree, collapsedPaths, toggleFolder, initCollapsed } = useFileTree();
 const { selectedFile, selectFile } = useChanges();
+
+watch(tree, (nodes) => {
+  if (nodes.length) initCollapsed(nodes);
+}, { immediate: true });
 
 const { data: worktreeList, refresh: refreshWorktrees } = await useFetch(
   "/api/worktrees",
@@ -206,7 +210,9 @@ async function toggleDevServer(wt: any) {
         v-else
         :nodes="tree"
         :selected-file="selectedFile"
+        :collapsed="collapsedPaths"
         @select="selectFile"
+        @toggle="toggleFolder"
       />
     </div>
 

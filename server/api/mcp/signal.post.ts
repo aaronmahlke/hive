@@ -1,8 +1,9 @@
 import { db } from "../../database";
-import { signals, sessions } from "../../database/schema";
-import { eq, and } from "drizzle-orm";
+import { signals, sessions, worktrees } from "../../database/schema";
+import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod/v4";
+import { emitProjectEvent } from "../../services/opencode-events";
 
 const bodySchema = z.object({
   type: z.enum(["question", "done", "progress", "error", "blocked"]),
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
     })
     .returning();
 
-  // Update session status based on signal type
+  // Update session status and emit event to connected UI clients
   if (body.sessionId) {
     const statusMap: Record<string, string> = {
       question: "question",
@@ -42,6 +43,22 @@ export default defineEventHandler(async (event) => {
       .update(sessions)
       .set({ status: statusMap[body.type] || "working" })
       .where(eq(sessions.id, body.sessionId));
+
+    // Resolve session → worktree → project so we can push over WS
+    const session = await db.query.sessions.findFirst({
+      where: { id: body.sessionId },
+    });
+    if (session?.worktreeId) {
+      const worktree = await db.query.worktrees.findFirst({
+        where: { id: session.worktreeId },
+      });
+      if (worktree?.projectId) {
+        emitProjectEvent(worktree.projectId, {
+          type: "signal",
+          properties: signal,
+        });
+      }
+    }
   }
 
   // For questions, long-poll until resolved

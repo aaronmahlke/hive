@@ -252,7 +252,7 @@ async function fetchAndSendSignals(peer: Peer) {
       .from(signals)
       .where(eq(signals.resolved, false));
 
-    for (const q of pending.filter((s) => s.type === "question")) {
+    for (const q of pending.filter((s) => s.type === "question" || s.type === "blocked")) {
       peer.send(JSON.stringify({ type: "signal", data: q }));
     }
   } catch {

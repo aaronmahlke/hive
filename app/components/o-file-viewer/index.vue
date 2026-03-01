@@ -25,6 +25,8 @@ type Emits = {
 const { content, filePath, comments = [] } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+const isImage = computed(() => content.startsWith("data:image/"));
+
 const lang = computed(() => getLangFromPath(filePath));
 
 // ── Lines ────────────────────────────────────────────────────────────────
@@ -154,7 +156,12 @@ onUnmounted(() => document.removeEventListener("mouseup", onMouseUp));
 </script>
 
 <template>
+  <div v-if="isImage" class="flex h-full w-full items-center justify-center bg-black p-4">
+    <img :src="content" :alt="filePath" class="max-w-full object-contain" />
+  </div>
+
   <div
+    v-else
     class="file-viewer-root"
     :style="{
       fontFamily: 'var(--diff-font)',
