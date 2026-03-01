@@ -77,7 +77,7 @@ async function waitForResolution(
 
   while (Date.now() - start < timeoutMs) {
     const signal = await db.query.signals.findFirst({
-      where: and(eq(signals.id, signalId), eq(signals.resolved, true)),
+      where: { id: signalId, resolved: true },
     });
 
     if (signal?.resolvedContent) {

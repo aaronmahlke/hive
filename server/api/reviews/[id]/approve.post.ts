@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const review = await db.query.reviews.findFirst({
-    where: eq(reviews.id, id),
+    where: { id },
   });
 
   if (!review) {
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   // If commit message provided, commit the changes
   if (body.commitMessage) {
     const worktree = await db.query.worktrees.findFirst({
-      where: eq(worktrees.id, review.worktreeId),
+      where: { id: review.worktreeId },
     });
 
     if (worktree) {

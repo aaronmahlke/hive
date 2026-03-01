@@ -57,7 +57,7 @@ export default defineEventHandler(async (event) => {
   if (!id) throw createError({ statusCode: 400, message: "id is required" });
 
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, id),
+    where: { id },
   });
 
   if (!project) throw createError({ statusCode: 404, message: "Project not found" });

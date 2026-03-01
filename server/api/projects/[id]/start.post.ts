@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, id),
+    where: { id },
   });
   console.log(`[start] DB lookup: ${Date.now() - t0}ms`);
 

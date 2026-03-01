@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const worktree = await db.query.worktrees.findFirst({
-    where: eq(worktrees.id, id),
+    where: { id },
   });
 
   if (!worktree?.opencodePort) {
@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
 
   // Find or create a worker session
   let session = await db.query.sessions.findFirst({
-    where: eq(sessions.worktreeId, id),
+    where: { worktreeId: id },
   });
 
   if (!session) {

@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const worktree = await db.query.worktrees.findFirst({
-    where: eq(worktrees.id, body.worktreeId),
+    where: { id: body.worktreeId },
   });
 
   if (!worktree || !worktree.opencodePort) {

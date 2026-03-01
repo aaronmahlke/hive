@@ -136,3 +136,4 @@ export const devProfile = sqliteTable("dev_profile", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
+

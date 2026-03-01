@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
 
   // Get the project
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, body.projectId),
+    where: { id: body.projectId },
   });
 
   if (!project) {

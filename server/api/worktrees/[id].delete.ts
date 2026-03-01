@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const worktree = await db.query.worktrees.findFirst({
-    where: eq(worktrees.id, id),
+    where: { id },
   });
 
   if (!worktree) {
@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, worktree.projectId),
+    where: { id: worktree.projectId },
   });
 
   // Stop OpenCode server

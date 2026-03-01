@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   // Check if project with this path already exists
   const existing = await db.query.projects.findFirst({
-    where: eq(projects.path, body.path),
+    where: { path: body.path },
   });
 
   if (existing) {

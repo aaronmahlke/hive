@@ -35,7 +35,7 @@ export default defineWebSocketHandler({
     }
 
     const project = await db.query.projects.findFirst({
-      where: eq(projects.id, projectId),
+      where: { id: projectId },
     });
     console.log(`[ws:open] DB lookup: ${Date.now() - t0}ms`);
 

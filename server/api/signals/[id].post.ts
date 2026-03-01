@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const signal = await db.query.signals.findFirst({
-    where: eq(signals.id, id),
+    where: { id },
   });
 
   if (!signal) {

@@ -31,7 +31,7 @@ export async function delegateTask(opts: {
   sessionId: string;
 }> {
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, opts.projectId),
+    where: { id: opts.projectId },
   });
 
   if (!project) throw new Error("Project not found");
@@ -128,7 +128,7 @@ export async function delegateTask(opts: {
  */
 export async function triggerReview(worktreeId: string): Promise<string> {
   const worktree = await db.query.worktrees.findFirst({
-    where: eq(worktrees.id, worktreeId),
+    where: { id: worktreeId },
   });
 
   if (!worktree || !worktree.opencodePort) {
