@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ArrowUpIcon, StopIcon } from "@heroicons/vue/16/solid";
+import { ArrowUpIcon, StopIcon, PaperClipIcon, XMarkIcon } from "@heroicons/vue/16/solid";
 import { useTextareaAutosize, useEventListener } from "@vueuse/core";
+import type { FileUIPart } from "ai";
 
 type Props = {
   disabled?: boolean;
@@ -9,7 +10,7 @@ type Props = {
 };
 
 type Emits = {
-  send: [text: string];
+  send: [text: string, files: FileUIPart[]];
   abort: [];
 };
 
@@ -25,11 +26,48 @@ const props = withDefaults(defineProps<Props>(), {
 const textareaEl = useTemplateRef<HTMLTextAreaElement>("textarea");
 const { input: message, triggerResize } = useTextareaAutosize({ element: textareaEl });
 
+// Attached images
+const attachments = ref<FileUIPart[]>([]);
+const fileInputEl = useTemplateRef<HTMLInputElement>("fileInput");
+
+async function onFilesSelected(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (!input.files?.length) return;
+
+  for (const file of Array.from(input.files)) {
+    if (!file.type.startsWith("image/")) continue;
+    const dataUrl = await readFileAsDataUrl(file);
+    attachments.value.push({
+      type: "file",
+      mediaType: file.type as FileUIPart["mediaType"],
+      data: dataUrl,
+      filename: file.name,
+    });
+  }
+
+  // Reset so same file can be selected again
+  input.value = "";
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeAttachment(index: number) {
+  attachments.value.splice(index, 1);
+}
+
 function handleSend() {
   const trimmed = message.value.trim();
-  if (!trimmed || props.disabled) return;
-  emit("send", trimmed);
+  if ((!trimmed && !attachments.value.length) || props.disabled) return;
+  emit("send", trimmed, [...attachments.value]);
   message.value = "";
+  attachments.value = [];
   triggerResize();
 }
 
@@ -44,6 +82,23 @@ useEventListener(textareaEl, "keydown", (e: KeyboardEvent) => {
   }
 });
 
+// Paste images from clipboard
+useEventListener(textareaEl, "paste", async (e: ClipboardEvent) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (!item.type.startsWith("image/")) continue;
+    const file = item.getAsFile();
+    if (!file) continue;
+    const dataUrl = await readFileAsDataUrl(file);
+    attachments.value.push({
+      type: "file",
+      mediaType: file.type as FileUIPart["mediaType"],
+      data: dataUrl,
+    });
+  }
+});
+
 defineExpose({ focus: () => textareaEl.value?.focus() });
 </script>
 
@@ -52,6 +107,27 @@ defineExpose({ focus: () => textareaEl.value?.focus() });
     class="relative overflow-hidden transition-colors"
     :class="props.disabled ? 'opacity-40' : ''"
   >
+    <!-- Image previews -->
+    <div v-if="attachments.length" class="flex flex-wrap gap-2 px-3 pt-2.5">
+      <div
+        v-for="(att, i) in attachments"
+        :key="i"
+        class="group/thumb relative size-16 shrink-0 overflow-hidden"
+      >
+        <img
+          :src="att.data"
+          class="size-full object-cover"
+          :alt="att.filename ?? 'attachment'"
+        />
+        <button
+          class="bg-base-1/80 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover/thumb:opacity-100"
+          @click="removeAttachment(i)"
+        >
+          <XMarkIcon class="text-primary size-4" />
+        </button>
+      </div>
+    </div>
+
     <textarea
       ref="textarea"
       v-model="message"
@@ -61,7 +137,26 @@ defineExpose({ focus: () => textareaEl.value?.focus() });
       class="text-copy text-primary placeholder:text-tertiary block min-h-[2.25rem] w-full resize-none bg-transparent px-3 pt-2.5 pb-1.5 outline-none"
     />
 
-    <div class="flex items-center justify-end px-2.5 pb-2">
+    <!-- Hidden file input -->
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      multiple
+      class="hidden"
+      @change="onFilesSelected"
+    />
+
+    <div class="flex items-center justify-between px-2.5 pb-2">
+      <!-- Attach button -->
+      <OButton
+        variant="transparent"
+        :icon-left="PaperClipIcon"
+        :disabled="props.disabled"
+        title="Attach image"
+        @click="fileInputEl?.click()"
+      />
+
       <div class="flex items-center gap-1.5">
         <OButton
           v-if="props.isWorking"
@@ -74,7 +169,7 @@ defineExpose({ focus: () => textareaEl.value?.focus() });
           v-else
           variant="inverse"
           :icon-left="ArrowUpIcon"
-          :class="!message.trim() || props.disabled ? 'opacity-20 scale-90' : ''"
+          :class="(!message.trim() && !attachments.length) || props.disabled ? 'opacity-20 scale-90' : ''"
           @click="handleSend"
         />
       </div>

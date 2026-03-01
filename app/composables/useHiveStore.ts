@@ -16,7 +16,7 @@
 
 import { Chat } from "@ai-sdk/vue";
 import { DefaultChatTransport } from "ai";
-import type { UIMessage } from "ai";
+import type { UIMessage, FileUIPart } from "ai";
 
 type Signal = {
   id: string;
@@ -136,7 +136,7 @@ export function useHiveStore() {
       error: errorRef,
 
       // Chat actions
-      sendMessage: (text: string) => chat.sendMessage({ text }),
+      sendMessage: (text: string, files?: FileUIPart[]) => chat.sendMessage({ text, files }),
       stop: () => chat.stop(),
 
       // Custom state

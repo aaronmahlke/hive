@@ -1,7 +1,8 @@
 import { defineEventHandler, readBody } from "h3";
-import { convertToModelMessages } from "ai";
+import { convertToModelMessages, generateId } from "ai";
+import type { UIMessage } from "ai";
 import { db } from "../database";
-import { projects } from "../database/schema";
+import { projects, messages as messagesTable } from "../database/schema";
 import { buildMainPrompt } from "../services/prompt-builder";
 import { runAgent } from "../services/agent";
 
@@ -9,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
   const { messages, projectId, model } = body as {
-    messages: any[];
+    messages: UIMessage[];
     projectId: string;
     model?: "opus" | "sonnet";
   };
@@ -48,6 +49,35 @@ export default defineEventHandler(async (event) => {
     systemPrompt,
   });
 
-  // Return the streaming response compatible with Chat class
-  return result.toUIMessageStreamResponse();
+  // Return the streaming response compatible with Chat class.
+  // Pass originalMessages so the SDK uses persistence mode (assigns stable IDs
+  // to assistant messages) and calls onFinish with the full updated message list.
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    generateMessageId: () => generateId(),
+    onFinish: async ({ messages: updatedMessages }) => {
+      try {
+        // The client sends all prior messages on every turn, so we diff by ID
+        // to avoid duplicates and only write genuinely new messages.
+        const existingIds = new Set(messages.map((m) => m.id));
+        const newMessages = updatedMessages.filter((m) => !existingIds.has(m.id));
+
+        if (newMessages.length === 0) return;
+
+        await db.insert(messagesTable).values(
+          newMessages.map((m) => ({
+            id: m.id,
+            projectId,
+            role: m.role as "user" | "assistant" | "system" | "tool",
+            content: m.parts ?? m.content,
+            createdAt: new Date(),
+          })),
+        );
+
+        console.log(`[chat] persisted ${newMessages.length} new message(s) for project ${projectId}`);
+      } catch (e: any) {
+        console.error("[chat] failed to persist messages:", e.message);
+      }
+    },
+  });
 });

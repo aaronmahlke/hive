@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FileUIPart } from "ai";
 type Props = {
   projectId: string;
   placeholder?: string;
@@ -18,22 +19,22 @@ const {
 } = store.project(projectId);
 
 const scrollArea = useTemplateRef("scrollArea");
-const messageQueue = ref<string[]>([]);
+const messageQueue = ref<{ text: string; files: FileUIPart[] }[]>([]);
 const chatInput = useTemplateRef<{ focus: () => void }>("chatInput");
 
 // Auto-dequeue when agent finishes
 watch(isLoading, (loading, wasLoading) => {
   if (wasLoading && !loading && messageQueue.value.length > 0) {
     const next = messageQueue.value.shift()!;
-    sendMessage(next);
+    sendMessage(next.text, next.files);
   }
 });
 
-function handleSend(text: string) {
+function handleSend(text: string, files: FileUIPart[] = []) {
   if (isLoading.value) {
-    messageQueue.value.push(text);
+    messageQueue.value.push({ text, files });
   } else {
-    sendMessage(text);
+    sendMessage(text, files);
     stickToBottom.value = true;
     scrollToBottom();
   }
@@ -146,7 +147,7 @@ watch(initializing, (val, old) => {
               :disabled="!connected"
               :placeholder="placeholder || 'Send a message...'"
               :is-working="isLoading"
-              @send="handleSend"
+              @send="(text, files) => handleSend(text, files)"
               @abort="handleAbort"
             />
           </div>

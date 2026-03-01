@@ -2,7 +2,7 @@
 import { XMarkIcon } from "@heroicons/vue/16/solid";
 
 type Props = {
-  messages: string[];
+  messages: { text: string; files: { type: string }[] }[];
 };
 
 type Emits = {
@@ -21,7 +21,7 @@ const emit = defineEmits<Emits>();
       class="group/q flex items-start gap-2"
     >
       <p class="text-copy text-secondary min-w-0 flex-1 truncate py-0.5">
-        {{ msg }}
+        {{ msg.text || (msg.files?.length ? `[${msg.files.length} image${msg.files.length > 1 ? "s" : ""}]` : "") }}
       </p>
       <OButton
         variant="transparent"

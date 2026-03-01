@@ -5,7 +5,7 @@ import {
   StopIcon,
 } from "@heroicons/vue/16/solid";
 import { ArrowPathIcon } from "@heroicons/vue/20/solid";
-import type { UIMessage } from "ai";
+import type { UIMessage, FileUIPart } from "ai";
 
 type DynamicToolPart = {
   type: "dynamic-tool";
@@ -17,8 +17,15 @@ type DynamicToolPart = {
   errorText?: string;
 };
 
+type ReasoningPart = {
+  type: "reasoning";
+  text: string;
+  state?: "streaming" | "done";
+};
+
 type RenderBlock =
   | { kind: "text"; text: string; id: string }
+  | { kind: "reasoning"; text: string; state?: "streaming" | "done"; id: string }
   | { kind: "tools"; tools: DynamicToolPart[]; id: string };
 
 type Props = {
@@ -45,6 +52,13 @@ const userText = computed(() => {
   return "";
 });
 
+const imageAttachments = computed<FileUIPart[]>(() => {
+  if (!isUser.value) return [];
+  return (message.parts ?? []).filter(
+    (p): p is FileUIPart => p.type === "file" && (p as FileUIPart).mediaType?.startsWith("image/"),
+  );
+});
+
 // Build sequential render blocks from assistant message parts.
 // Consecutive tool calls are grouped into a single collapsible block.
 // Text parts are individual blocks between tool groups.
@@ -54,7 +68,15 @@ const blocks = computed<RenderBlock[]>(() => {
   const result: RenderBlock[] = [];
 
   for (const part of message.parts ?? []) {
-    if (part.type === "text" && (part as any).text) {
+    if (part.type === "reasoning") {
+      const rp = part as unknown as ReasoningPart;
+      result.push({
+        kind: "reasoning",
+        text: rp.text,
+        state: rp.state,
+        id: `reasoning-${message.id}-${result.length}`,
+      });
+    } else if (part.type === "text" && (part as any).text) {
       result.push({
         kind: "text",
         text: (part as any).text,
@@ -150,7 +172,17 @@ async function copyResponse() {
   <div v-if="isUser" class="border-edge border-b py-5 last:border-b-0">
     <div class="px-5 pb-3">
       <div class="bg-surface-1 inline-block max-w-full px-4 py-2.5">
-        <p class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
+        <!-- Image attachments -->
+        <div v-if="imageAttachments.length" class="mb-2.5 flex flex-wrap gap-2">
+          <img
+            v-for="(img, i) in imageAttachments"
+            :key="i"
+            :src="img.data"
+            class="max-h-48 max-w-full object-contain"
+            :alt="img.filename ?? 'attachment'"
+          />
+        </div>
+        <p v-if="userText" class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
       </div>
     </div>
   </div>
@@ -177,8 +209,13 @@ async function copyResponse() {
 
     <!-- Sequential blocks: text and tool groups interleaved -->
     <template v-for="(block, blockIdx) in blocks" :key="block.id">
+      <!-- Reasoning block -->
+      <div v-if="block.kind === 'reasoning'" class="px-5 py-0.5">
+        <OChatReasoning :text="block.text" :state="block.state" />
+      </div>
+
       <!-- Text block -->
-      <div v-if="block.kind === 'text'" class="group/resp flex items-start gap-1 px-5 py-1">
+      <div v-else-if="block.kind === 'text'" class="group/resp flex items-start gap-1 px-5 py-1">
         <OChatMarkdown class="min-w-0 flex-1" :content="block.text" />
         <OButton
           variant="transparent"
