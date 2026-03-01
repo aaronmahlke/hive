@@ -65,6 +65,12 @@ export function useFileTree() {
     { watch: [projectId], immediate: true },
   );
 
+  // Refresh the tree whenever the server emits an update event via SSE
+  const { data: sseData } = useEventSource("/api/events");
+  watch(sseData, () => {
+    if (projectId.value) refreshTree();
+  });
+
   const tree = computed<FileTreeNode[]>(() => (treeData.value as any)?.tree ?? []);
 
   // ── File content ────────────────────────────────────────────────────────
