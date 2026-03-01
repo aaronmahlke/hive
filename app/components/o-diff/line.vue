@@ -15,15 +15,14 @@ type Props = {
   hovered?: boolean;
 };
 
-const props = defineProps<Props>();
-const { lineNumber, type, wordSpans, selected = false, hovered = false } = props;
-
-// Log first line's tokens to debug highlighting
-if (props.lineNumber === 1) {
-  watchEffect(() => {
-    console.log("[line:1] tokens:", props.tokens.length, "colors:", props.tokens.map(t => t.color).join(", "));
-  });
-}
+const {
+  lineNumber,
+  type,
+  tokens,
+  wordSpans,
+  selected = false,
+  hovered = false,
+} = defineProps<Props>();
 
 const emit = defineEmits<{
   "mousedown-number": [lineNumber: number];
@@ -75,7 +74,7 @@ const emphasisClass = computed(() => {
       </template>
       <template v-else>
         <span
-          v-for="(token, i) in props.tokens"
+          v-for="(token, i) in tokens"
           :key="i"
           :style="{ color: token.color }"
         >{{ token.content }}</span>

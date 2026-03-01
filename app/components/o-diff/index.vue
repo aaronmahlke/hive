@@ -246,18 +246,6 @@ async function highlightAll() {
     updated.set(unique[i], results[i]);
   }
   tokenMap.value = updated;
-
-  // Debug: check if the first line can be found
-  const firstRow = splitRows.value.find(r => r.kind === "line");
-  if (firstRow && firstRow.kind === "line") {
-    const key = firstRow.left.text;
-    const found = updated.has(key);
-    console.log("[diff] after highlight: map.size=", updated.size, "firstKey found=", found, "key repr=", JSON.stringify(key).slice(0, 60));
-    if (!found) {
-      const mapKeys = [...updated.keys()].slice(0, 3);
-      console.log("[diff] sample map keys:", mapKeys.map(k => JSON.stringify(k).slice(0, 60)));
-    }
-  }
 }
 
 function getTokens(text: string): Token[] {
