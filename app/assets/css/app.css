@@ -1,22 +1,6 @@
 @import "tailwindcss";
 @import "./diff.css";
 
-/*
- * ═══════════════════════════════════════════════════════════════
- * OKLCH Seed-Based Color System
- *
- * Ported from Zeitwerk's design system.
- *
- * Two axes:
- *   base-*    = spatial layers (fixed direction, always darker = further back)
- *   surface-* = interactive shifts (relative to inherited --base, uses --dir)
- *
- * --seed is the raw OKLCH root color.
- * --base is the inherited context variable — set by .base-* classes,
- * and all derived tokens (surfaces, text, edges) adapt automatically.
- * ═══════════════════════════════════════════════════════════════
- */
-
 :root {
   /* ── Seed coordinates ── */
   --seed-h: 55;
