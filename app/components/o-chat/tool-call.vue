@@ -33,7 +33,6 @@ type Props = {
 const { tool } = defineProps<Props>();
 const expanded = ref(false);
 
-/** Shorten an absolute path to the last 2-3 meaningful segments */
 function shortPath(p: string): string {
   if (!p) return "";
   const parts = p.replace(/^\/+/, "").split("/");

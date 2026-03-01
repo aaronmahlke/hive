@@ -21,10 +21,10 @@ interface TextEditorParams {
 }
 
 function resolvePath(basePath: string, filePath: string): string {
-  // If the path is already absolute, use it as-is (but ensure it's within basePath)
-  const resolved = filePath.startsWith("/")
-    ? resolve(filePath)
-    : resolve(basePath, filePath);
+  // The model tends to prefix paths with /repo (its trained container convention).
+  // Strip that prefix so we resolve relative to the actual basePath.
+  const stripped = filePath.replace(/^\/repo\/?/, "");
+  const resolved = resolve(basePath, stripped);
   return resolved;
 }
 

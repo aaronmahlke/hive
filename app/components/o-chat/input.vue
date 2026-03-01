@@ -40,7 +40,7 @@ async function onFilesSelected(e: Event) {
     attachments.value.push({
       type: "file",
       mediaType: file.type as FileUIPart["mediaType"],
-      data: dataUrl,
+      url: dataUrl,
       filename: file.name,
     });
   }
@@ -94,7 +94,7 @@ useEventListener(textareaEl, "paste", async (e: ClipboardEvent) => {
     attachments.value.push({
       type: "file",
       mediaType: file.type as FileUIPart["mediaType"],
-      data: dataUrl,
+      url: dataUrl,
     });
   }
 });
@@ -115,7 +115,7 @@ defineExpose({ focus: () => textareaEl.value?.focus() });
         class="group/thumb relative size-16 shrink-0 overflow-hidden"
       >
         <img
-          :src="att.data"
+          :src="att.url"
           class="size-full object-cover"
           :alt="att.filename ?? 'attachment'"
         />

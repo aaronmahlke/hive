@@ -156,7 +156,11 @@ export function createBashTool(
         return "No command provided.";
       }
 
-      const result = await executeCommand(cwd, command);
+      // The model is trained on a /repo container convention.
+      // Rewrite /repo references to the actual project path.
+      const rewritten = command.replaceAll("/repo/", `${cwd}/`).replaceAll("/repo", cwd);
+
+      const result = await executeCommand(cwd, rewritten);
       return result || "(no output)";
     },
   });

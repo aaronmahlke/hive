@@ -51,7 +51,7 @@ export function runAgent(options: RunAgentOptions) {
   // Build the tool set
   const tools = {
     bash: createBashTool(anthropic, projectPath),
-    textEditor: createTextEditorTool(anthropic, projectPath),
+    str_replace_based_edit_tool: createTextEditorTool(anthropic, projectPath),
     webSearch: anthropic.tools.webSearch_20250305({ maxUses: 10 }),
     webFetch: anthropic.tools.webFetch_20250910({ maxUses: 10 }),
     codeExecution: anthropic.tools.codeExecution_20250825(),
