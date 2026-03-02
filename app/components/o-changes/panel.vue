@@ -28,9 +28,13 @@ function stageAll() {
 // Initialize on mount
 onMounted(() => init());
 
-// Re-initialize when route changes
+// Re-initialize when route or active worktree changes
 const route = useRoute();
+const { activeWorktreePath } = useActiveWorktree(
+  computed(() => (route.params.id as string) || null),
+);
 watch(() => route.params.id, () => init());
+watch(activeWorktreePath, () => init());
 
 // Auto-refresh: poll every 5s while a project is open
 const projectId = computed(() => (route.params.id as string) || null);

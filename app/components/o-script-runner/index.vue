@@ -1,0 +1,110 @@
+<script setup lang="ts">
+import {
+  PlayIcon,
+  StopIcon,
+  ChevronDownIcon,
+} from "@heroicons/vue/16/solid";
+
+type Props = {
+  projectId: string;
+  worktreePath?: string | null;
+};
+
+const { projectId, worktreePath = null } = defineProps<Props>();
+
+const open = ref(false);
+
+const { data: scriptsData, refresh } = useFetch(
+  () => `/api/projects/${projectId}/scripts`,
+  {
+    query: { worktreePath },
+    watch: [() => worktreePath],
+    default: () => ({ scripts: {}, pkgManager: "npm", active: null, activeCwd: null }),
+  },
+);
+
+// Poll for active script status
+let poll: ReturnType<typeof setInterval> | null = null;
+onMounted(() => {
+  poll = setInterval(() => refresh(), 3000);
+});
+onUnmounted(() => {
+  if (poll) clearInterval(poll);
+});
+
+const scripts = computed(() => Object.keys(scriptsData.value.scripts));
+const activeScript = computed(() => scriptsData.value.active);
+const isRunning = computed(() => !!activeScript.value);
+
+async function runScript(script: string) {
+  open.value = false;
+  await $fetch(`/api/projects/${projectId}/scripts`, {
+    method: "POST",
+    body: { script, worktreePath },
+  });
+  await refresh();
+}
+
+async function stop() {
+  await $fetch(`/api/projects/${projectId}/scripts`, {
+    method: "POST",
+    body: { stop: true },
+  });
+  await refresh();
+}
+</script>
+
+<template>
+  <div class="flex items-center gap-0.5">
+    <OPopover v-model="open" side="bottom" align="end">
+      <template #trigger>
+        <button
+          type="button"
+          class="text-copy-xs text-tertiary hover:text-primary flex h-6 items-center gap-1 rounded px-1.5 transition-colors"
+          :class="isRunning ? 'text-success' : ''"
+        >
+          <component :is="isRunning ? StopIcon : PlayIcon" class="size-3" />
+          <span v-if="activeScript" class="font-mono">{{ activeScript }}</span>
+          <span v-else>Run</span>
+          <ChevronDownIcon class="size-3 opacity-50" />
+        </button>
+      </template>
+
+      <div class="max-h-64 w-48 overflow-auto py-1">
+        <button
+          v-if="isRunning"
+          type="button"
+          class="text-copy-sm text-danger hover:bg-surface-1 flex w-full items-center gap-2 px-3 py-1.5 text-left"
+          @click="stop"
+        >
+          <StopIcon class="size-3 shrink-0" />
+          Stop {{ activeScript }}
+        </button>
+
+        <div
+          v-if="isRunning && scripts.length"
+          class="border-edge mx-2 my-1 border-t"
+        />
+
+        <button
+          v-for="script in scripts"
+          :key="script"
+          type="button"
+          class="text-copy-sm hover:bg-surface-1 flex w-full items-center gap-2 px-3 py-1.5 text-left"
+          :class="script === activeScript ? 'text-success' : 'text-primary'"
+          @click="runScript(script)"
+        >
+          <PlayIcon class="text-tertiary size-3 shrink-0" />
+          <span class="truncate font-mono">{{ script }}</span>
+        </button>
+
+        <div
+          v-if="!scripts.length"
+          class="text-copy-sm text-tertiary px-3 py-2 text-center"
+        >
+          No scripts found
+        </div>
+      </div>
+    </OPopover>
+  </div>
+</template>

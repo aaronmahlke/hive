@@ -64,7 +64,7 @@ const heightClasses: Record<Size, string> = {
 };
 
 const widthClasses: Record<Size, string> = {
-  xs: "w-5",
+  xs: "w-6",
   sm: "w-7",
   md: "w-8",
 };

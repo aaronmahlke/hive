@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "id is required" });
   }
 
-  const body = await readBody<{ message: string }>(event);
+  const body = await readBody<{ message: string; worktreePath?: string }>(event);
   if (!body.message?.trim()) {
     throw createError({ statusCode: 400, message: "Commit message is required" });
   }
@@ -25,7 +25,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "Project not found" });
   }
 
-  const git = simpleGit(project.path);
+  // Use worktree path if provided, otherwise project root
+  const targetPath = body.worktreePath || project.path;
+  const git = simpleGit(targetPath);
 
   try {
     // Stage everything

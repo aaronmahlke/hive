@@ -98,7 +98,11 @@ watch(initializing, (val, old) => {
         v-if="!turns.length && !isWorking"
         class="flex h-full items-center justify-center"
       >
-        <p class="text-copy text-tertiary">
+        <p v-if="initializing" class="text-copy text-tertiary flex items-center gap-2">
+          <span class="bg-accent inline-block size-2 animate-pulse rounded-full" />
+          Starting agent...
+        </p>
+        <p v-else class="text-copy text-tertiary">
           {{ connected ? "Send a message to start." : "Connecting..." }}
         </p>
       </div>

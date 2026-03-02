@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { CommandLineIcon } from "@heroicons/vue/16/solid";
-import { ArrowPathIcon } from "@heroicons/vue/20/solid";
 
 const route = useRoute();
 const projectId = computed(() => route.params.id as string);
@@ -8,14 +7,71 @@ const projectId = computed(() => route.params.id as string);
 const { data: projectData } = useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
-const { connected, initializing, error, port } = store.project(projectId.value);
+const { activeWorktreePath } = useActiveWorktree(projectId);
 
-// Activate on first visit - store handles dedup
+// Fetch worktrees to resolve the active worktree's metadata
+const { data: worktreeList, refresh: refreshWorktrees } = await useFetch("/api/worktrees", {
+  query: { projectId },
+  watch: [projectId],
+  default: () => [],
+});
+
+// Compute the active worktree object (null = main)
+const activeWorktree = computed(() => {
+  if (!activeWorktreePath.value) return null;
+  return worktreeList.value.find((wt: any) => wt.path === activeWorktreePath.value) || null;
+});
+
+// Connection key for the store: projectId for main, wt:<path> for worktrees
+const connectionKey = computed(() => {
+  if (!activeWorktreePath.value) return projectId.value;
+  return `wt:${activeWorktreePath.value}`;
+});
+
+// Activate main project on mount
 onMounted(() => {
   store.activate(projectId.value);
 });
 
-// Changes overlay state (shared with OChangesPanel via composable)
+// Watch for worktree switches — activate connections as needed.
+// We watch activeWorktreePath directly (not activeWorktree) because the
+// worktreeList might be stale when a worktree is first selected.
+watch(activeWorktreePath, async (path) => {
+  if (!path) return;
+
+  // Refresh worktree list to pick up newly created worktrees
+  await refreshWorktrees();
+
+  const wt = worktreeList.value.find((w: any) => w.path === path);
+  if (wt) {
+    store.activateWorktree({
+      projectId: projectId.value,
+      worktreePath: wt.path,
+      branchName: wt.branchName,
+    });
+  } else {
+    // Worktree not in list yet (edge case) — extract branch from path
+    const branchGuess = path.split("/").pop() || "unknown";
+    store.activateWorktree({
+      projectId: projectId.value,
+      worktreePath: path,
+      branchName: branchGuess,
+    });
+  }
+}, { immediate: true });
+
+// Header title
+const headerTitle = computed(() => {
+  if (activeWorktree.value) {
+    return activeWorktree.value.branchName;
+  }
+  if (activeWorktreePath.value) {
+    return activeWorktreePath.value.split("/").pop() || "Worktree";
+  }
+  return projectData.value?.name ?? "Project";
+});
+
+// Changes overlay state
 const {
   selectedFile,
   selectedFileDiff,
@@ -39,47 +95,23 @@ const isSelectedFileViewed = computed(() =>
   <div class="relative flex h-full flex-col overflow-hidden">
     <OHeader
       :icon="CommandLineIcon"
-      :title="projectData?.name ?? 'Project'"
+      :title="headerTitle"
     >
       <template #trailing>
-        <span
-          v-if="projectData?.pkgManager"
-          class="bg-surface-1 border-edge text-copy-sm text-secondary rounded border px-2 py-0.5"
-        >
-          {{ projectData.pkgManager }}
-        </span>
-        <span v-if="port" class="text-copy-xs text-tertiary font-mono">
-          :{{ port }}
-        </span>
+        <OScriptRunner
+          :project-id="projectId"
+          :worktree-path="activeWorktreePath"
+        />
       </template>
     </OHeader>
 
-    <div v-if="initializing" class="flex flex-1 items-center justify-center gap-2">
-      <ArrowPathIcon class="text-tertiary size-4 animate-spin" />
-      <span class="text-copy text-tertiary">Starting agent...</span>
-    </div>
-
-    <div v-else-if="error" class="flex flex-1 items-center justify-center">
-      <div class="text-center">
-        <p class="text-copy text-danger">{{ error }}</p>
-        <OButton
-          variant="primary"
-          size="md"
-          class="mt-3"
-          @click="store.activate(projectId)"
-        >
-          Retry
-        </OButton>
-      </div>
-    </div>
-
     <OChat
-      v-else
-      :project-id="projectId"
-      placeholder="Chat with the main agent..."
+      :key="connectionKey"
+      :project-id="connectionKey"
+      :placeholder="activeWorktree ? `Chat with ${activeWorktree.branchName} agent...` : 'Chat with the main agent...'"
     />
 
-    <!-- Diff overlay — covers the main content area when a file is selected -->
+    <!-- Diff overlay -->
     <OChangesOverlay
       v-if="selectedFile"
       :file-path="selectedFile"

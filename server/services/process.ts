@@ -34,6 +34,7 @@ export function startOpenCodeServer(
   worktreePath: string,
   port: number,
   sessionId?: string,
+  projectId?: string,
 ): number {
   const key = `opencode:${worktreePath}`;
 
@@ -76,7 +77,7 @@ export function startOpenCodeServer(
   // Register MCP in the background - completely non-blocking
   // Use process.cwd() for the path since import.meta.url gets rewritten by Nitro
   const signalServerPath = join(process.cwd(), "server", "mcp", "signal-server.ts");
-  registerSignalMcp(port, signalServerPath, sessionId).catch((e) => {
+  registerSignalMcp(port, signalServerPath, sessionId, projectId).catch((e) => {
     console.warn(`[opencode:${port}] MCP registration failed (non-fatal):`, e.message);
   });
 
@@ -91,6 +92,7 @@ async function registerSignalMcp(
   port: number,
   signalServerPath: string,
   sessionId?: string,
+  projectId?: string,
 ) {
   // Wait for the server to be ready (max 15s, not 30s)
   const maxWait = 15_000;
@@ -129,6 +131,7 @@ async function registerSignalMcp(
           environment: {
             HIVE_API_URL: `http://localhost:${hivePort}`,
             HIVE_SESSION_ID: sessionId || "unknown",
+            HIVE_PROJECT_ID: projectId || "unknown",
           },
           enabled: true,
         },
@@ -146,6 +149,56 @@ async function registerSignalMcp(
   }
 }
 
+// Track the active script runner
+let activeScript: { key: string; script: string; cwd: string } | null = null;
+
+export function startScript(
+  worktreePath: string,
+  script: string,
+  pkgManager: string = "npm",
+): number {
+  // Stop any existing script
+  stopScript();
+
+  const key = `script:active`;
+  const args = pkgManager === "npm" ? ["run", script] : ["run", script];
+
+  const child = spawn(pkgManager, args, {
+    cwd: worktreePath,
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+    env: { ...process.env },
+  });
+
+  child.stdout?.on("data", (data: Buffer) => {
+    console.log(`[script:${script}] ${data.toString().trim()}`);
+  });
+
+  child.stderr?.on("data", (data: Buffer) => {
+    console.error(`[script:${script}] ${data.toString().trim()}`);
+  });
+
+  child.on("exit", (code) => {
+    console.log(`[script:${script}] exited with code ${code}`);
+    processes.delete(key);
+    activeScript = null;
+  });
+
+  processes.set(key, { process: child, type: "devserver" });
+  activeScript = { key, script, cwd: worktreePath };
+  return child.pid || 0;
+}
+
+export function stopScript(): void {
+  stopProcess("script:active");
+  activeScript = null;
+}
+
+export function getActiveScript(): { script: string; cwd: string } | null {
+  return activeScript;
+}
+
+// Legacy compat
 export function startDevServer(
   worktreePath: string,
   command: string,
@@ -158,8 +211,8 @@ export function startDevServer(
   const child = spawn(cmd, args, {
     cwd: worktreePath,
     stdio: ["ignore", "pipe", "pipe"],
-    detached: false,
-    env: { ...process.env, PORT: "3000" },
+    detached: true,
+    env: { ...process.env },
   });
 
   child.stdout?.on("data", (data: Buffer) => {
@@ -182,7 +235,18 @@ export function startDevServer(
 export function stopProcess(key: string): void {
   const entry = processes.get(key);
   if (entry) {
-    entry.process.kill("SIGTERM");
+    const pid = entry.process.pid;
+    // Kill the entire process group to clean up child processes (e.g. bun run dev → vite)
+    if (pid) {
+      try {
+        process.kill(-pid, "SIGTERM");
+      } catch {
+        // Process group kill failed, try direct kill
+        try { entry.process.kill("SIGTERM"); } catch {}
+      }
+    } else {
+      try { entry.process.kill("SIGTERM"); } catch {}
+    }
     processes.delete(key);
   }
 }

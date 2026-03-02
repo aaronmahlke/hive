@@ -77,6 +77,17 @@ export function emitProjectEvent(projectId: string, event: OpenCodeEvent) {
 }
 
 /**
+ * Emit a custom event on a specific port's emitter.
+ * Used for signals that need to reach a worktree's WS connection.
+ */
+export function emitOnPort(port: number, event: OpenCodeEvent) {
+  const sub = subscriptionsByPort.get(port);
+  if (sub) {
+    sub.emitter.emit("event", event);
+  }
+}
+
+/**
  * Unsubscribe a project from its port's event stream.
  */
 export function unsubscribe(projectId: string) {
@@ -105,6 +116,17 @@ async function connectSSE(port: number, sub: PortSubscription) {
   const url = `http://localhost:${port}/event`;
   sub.controller = new AbortController();
 
+  // Heartbeat watchdog: if no data received in 30s, force reconnect.
+  // OpenCode sends heartbeats every ~10s, so 30s means 3 missed beats.
+  let lastDataTime = Date.now();
+  const watchdog = setInterval(() => {
+    if (Date.now() - lastDataTime > 30_000) {
+      console.warn(`[sse:${port}] No data in 30s, forcing reconnect`);
+      sub.controller?.abort();
+      clearInterval(watchdog);
+    }
+  }, 5_000);
+
   try {
     const res = await fetch(url, {
       signal: sub.controller.signal,
@@ -125,6 +147,7 @@ async function connectSSE(port: number, sub: PortSubscription) {
       const { done, value } = await reader.read();
       if (done) break;
 
+      lastDataTime = Date.now();
       buffer += decoder.decode(value, { stream: true });
 
       const chunks = buffer.split("\n\n");
@@ -158,8 +181,14 @@ async function connectSSE(port: number, sub: PortSubscription) {
       }
     }
   } catch (e: any) {
-    if (e.name === "AbortError") return;
-    console.warn(`[sse:${port}] Disconnected: ${e.message}`);
+    if (e.name === "AbortError") {
+      // Could be watchdog or manual abort — still try to reconnect
+      console.log(`[sse:${port}] Aborted (watchdog or cleanup)`);
+    } else {
+      console.warn(`[sse:${port}] Disconnected: ${e.message}`);
+    }
+  } finally {
+    clearInterval(watchdog);
   }
 
   // Reconnect if still subscribed
@@ -168,6 +197,6 @@ async function connectSSE(port: number, sub: PortSubscription) {
       if (subscriptionsByPort.has(port)) {
         connectSSE(port, sub);
       }
-    }, 3000);
+    }, 2000);
   }
 }

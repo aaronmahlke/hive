@@ -15,6 +15,9 @@ import simpleGit from "simple-git";
  */
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
+  const query = getQuery(event);
+  const worktreePath = query.worktreePath as string | undefined;
+
   if (!id) {
     throw createError({ statusCode: 400, message: "id is required" });
   }
@@ -27,7 +30,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "Project not found" });
   }
 
-  const git = simpleGit(project.path);
+  // Use worktree path if provided, otherwise project root
+  const targetPath = worktreePath || project.path;
+  const git = simpleGit(targetPath);
 
   try {
     // Get file status first — this always works

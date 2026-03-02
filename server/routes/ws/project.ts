@@ -1,12 +1,16 @@
 import type { Peer, Message } from "crossws";
 import { db } from "../../database";
-import { projects, signals } from "../../database/schema";
+import { projects, signals, worktrees } from "../../database/schema";
 import { eq } from "drizzle-orm";
 import { parseConfig } from "../../utils/parse-config";
-import { getProjectEvents, emitProjectEvent } from "../../services/opencode-events";
+import { getProjectEvents, emitProjectEvent, emitOnPort } from "../../services/opencode-events";
 
 /**
  * WebSocket endpoint for real-time project communication.
+ *
+ * Supports both main project and worktree connections:
+ * - Main project: resolves port from project.configOverride
+ * - Worktree: resolves port from worktrees table (pass worktreeId param)
  *
  * Status is driven entirely by OpenCode's session.status SSE events.
  * No fallback polling - SSE handles everything with auto-reconnect.
@@ -27,6 +31,7 @@ export default defineWebSocketHandler({
     const url = new URL(peer.request?.url || "", "http://localhost");
     const projectId = url.searchParams.get("projectId");
     const sessionId = url.searchParams.get("sessionId");
+    const worktreeId = url.searchParams.get("worktreeId");
 
     if (!projectId || !sessionId) {
       peer.send(JSON.stringify({ type: "error", data: { message: "projectId and sessionId required" } }));
@@ -34,19 +39,31 @@ export default defineWebSocketHandler({
       return;
     }
 
-    const project = await db.query.projects.findFirst({
-      where: eq(projects.id, projectId),
-    });
-    console.log(`[ws:open] DB lookup: ${Date.now() - t0}ms`);
+    let port: number | null = null;
 
-    if (!project) {
-      peer.send(JSON.stringify({ type: "error", data: { message: "Project not found" } }));
-      peer.close(1008, "Project not found");
-      return;
+    if (worktreeId) {
+      // Worktree connection — resolve port from worktree DB record
+      const worktree = await db.query.worktrees.findFirst({
+        where: eq(worktrees.id, worktreeId),
+      });
+      port = worktree?.opencodePort ?? null;
+      console.log(`[ws:open] Worktree lookup (${worktreeId}): port=${port} ${Date.now() - t0}ms`);
+    } else {
+      // Main project connection — resolve port from project config
+      const project = await db.query.projects.findFirst({
+        where: eq(projects.id, projectId),
+      });
+      console.log(`[ws:open] Project lookup: ${Date.now() - t0}ms`);
+
+      if (!project) {
+        peer.send(JSON.stringify({ type: "error", data: { message: "Project not found" } }));
+        peer.close(1008, "Project not found");
+        return;
+      }
+
+      const config = parseConfig(project.configOverride);
+      port = config.opencodePort ?? null;
     }
-
-    const config = parseConfig(project.configOverride);
-    const port = config.opencodePort;
 
     if (!port) {
       peer.send(JSON.stringify({ type: "error", data: { message: "OpenCode server not running" } }));
@@ -183,7 +200,8 @@ export default defineWebSocketHandler({
             .set({ resolved: true, resolvedContent: answer })
             .where(eq(signals.id, signalId));
 
-          emitProjectEvent(info.projectId, {
+          // Emit on the current connection's port so the client gets confirmation
+          emitOnPort(info.port, {
             type: "signal.resolved",
             properties: { signalId },
           });

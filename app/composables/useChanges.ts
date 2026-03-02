@@ -33,6 +33,7 @@ let activeProjectId: string | null = null;
 export function useChanges() {
   const route = useRoute();
   const projectId = computed(() => (route.params.id as string) || null);
+  const { activeWorktreePath } = useActiveWorktree(projectId);
 
   const parsedFiles = computed(() => {
     if (!rawDiff.value) return new Map<string, FileDiffMetadata>();
@@ -68,7 +69,11 @@ export function useChanges() {
     if (!id) return;
     loading.value = true;
     try {
-      const data = await $fetch(`/api/projects/${id}/changes`);
+      const query: Record<string, string> = {};
+      if (activeWorktreePath.value) {
+        query.worktreePath = activeWorktreePath.value;
+      }
+      const data = await $fetch(`/api/projects/${id}/changes`, { query });
       files.value = (data as any).files || [];
       rawDiff.value = (data as any).diff || "";
     } catch (e) {
@@ -205,9 +210,11 @@ export function useChanges() {
     if (!id) return;
     loadingFileContent.value = true;
     try {
-      const data = await $fetch(`/api/projects/${id}/file-content`, {
-        query: { path: filePath },
-      });
+      const query: Record<string, string> = { path: filePath };
+      if (activeWorktreePath.value) {
+        query.worktreePath = activeWorktreePath.value;
+      }
+      const data = await $fetch(`/api/projects/${id}/file-content`, { query });
       selectedFileContent.value = (data as any).content || "";
     } catch (e) {
       console.error("[changes] Failed to fetch file content:", e);
@@ -312,7 +319,10 @@ export function useChanges() {
     try {
       await $fetch(`/api/projects/${id}/commit`, {
         method: "POST",
-        body: { message: message.trim() },
+        body: {
+          message: message.trim(),
+          ...(activeWorktreePath.value && { worktreePath: activeWorktreePath.value }),
+        },
       });
 
       viewedFiles.value = new Set();
@@ -330,10 +340,15 @@ export function useChanges() {
     }
   }
 
+  let activeWorktreeKey: string | null = null;
+
   function init() {
     const id = projectId.value;
-    if (id && id !== activeProjectId) {
+    const wtKey = `${id}:${activeWorktreePath.value || "main"}`;
+
+    if (id && wtKey !== activeWorktreeKey) {
       activeProjectId = id;
+      activeWorktreeKey = wtKey;
       files.value = [];
       rawDiff.value = "";
       comments.value = [];

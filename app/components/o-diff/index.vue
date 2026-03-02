@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FileDiffMetadata } from "@pierre/diffs";
 import { diffWordsWithSpace } from "diff";
-import { tokenizeLine, getLangFromPath, type Token } from "~/utils/diff-highlight";
+import { tokenizeBlock, getLangFromPath, type Token } from "~/utils/diff-highlight";
 
 type ChangeComment = {
   id: string;
@@ -12,20 +12,6 @@ type ChangeComment = {
   content: string;
   resolved: boolean;
 };
-
-type LineData = {
-  key: string;
-  lineNumber: number | null;
-  type: "addition" | "deletion" | "context";
-  text: string;
-  getTokens: Token[];
-  wordSpans?: { text: string; emphasis: boolean }[];
-};
-
-type RowItem =
-  | { kind: "separator"; key: string; content: string }
-  | { kind: "line"; key: string; data: LineData }
-  | { kind: "buffer"; key: string };
 
 type Props = {
   fileDiff: FileDiffMetadata;
@@ -54,22 +40,32 @@ const emit = defineEmits<Emits>();
 
 const lang = computed(() => getLangFromPath(filePath));
 
-// ── Expand collapsed context lines ──
-
 const expandedHunks = ref(new Set<number>());
-const fileLines = ref<string[] | null>(null);
+const newFileLines = ref<string[] | null>(null);
+const oldFileLines = ref<string[] | null>(null);
 const loadingFile = ref(false);
+const fileLines = newFileLines;
 
-async function fetchFileLines() {
-  if (fileLines.value || loadingFile.value) return;
+const route = useRoute();
+const projectId = route.params.id as string;
+const { activeWorktreePath } = useActiveWorktree(computed(() => projectId));
+
+async function fetchFullFiles() {
+  if (newFileLines.value || loadingFile.value) return;
   loadingFile.value = true;
+
+  const query: Record<string, string> = { path: filePath };
+  if (activeWorktreePath.value) {
+    query.worktreePath = activeWorktreePath.value;
+  }
+
   try {
-    const route = useRoute();
-    const projectId = route.params.id as string;
-    const data = await $fetch(`/api/projects/${projectId}/file-content`, {
-      query: { path: filePath },
-    });
-    fileLines.value = ((data as any).content || "").split("\n");
+    const [newRes, oldRes] = await Promise.all([
+      $fetch(`/api/projects/${projectId}/file-content`, { query }),
+      $fetch(`/api/projects/${projectId}/file-content`, { query: { ...query, ref: "HEAD" } }),
+    ]);
+    newFileLines.value = ((newRes as any).content || "").split("\n");
+    oldFileLines.value = ((oldRes as any).content || "").split("\n");
   } catch (e) {
     console.error("[diff] Failed to fetch file content:", e);
   } finally {
@@ -78,14 +74,12 @@ async function fetchFileLines() {
 }
 
 async function expandHunk(hunkIndex: number) {
-  await fetchFileLines();
+  await fetchFullFiles();
   const newSet = new Set(expandedHunks.value);
   newSet.add(hunkIndex);
   expandedHunks.value = newSet;
   highlightAll();
 }
-
-// ── Build left/right line arrays from hunks ──
 
 type SplitLine = {
   key: string;
@@ -116,7 +110,6 @@ const splitRows = computed<SplitRow[]>(() => {
       newLine = hunk.additionStart;
     }
 
-    // Calculate collapsed line range before this hunk
     let startLine = 1;
     let endLine = hunk.deletionStart - 1;
 
@@ -130,7 +123,6 @@ const splitRows = computed<SplitRow[]>(() => {
     const isExpanded = expandedHunks.value.has(h);
 
     if (isExpanded && fileLines.value && collapsedLines > 0) {
-      // Insert the actual context lines instead of a separator
       for (let ln = startLine; ln <= endLine; ln++) {
         const text = (fileLines.value[ln - 1] ?? "") + "\n";
         rows.push({
@@ -216,43 +208,35 @@ const splitRows = computed<SplitRow[]>(() => {
   return rows;
 });
 
-// ── Syntax highlighting (async) ──
-
-const tokenMap = ref(new Map<string, Token[]>());
+const oldFileTokens = ref<Token[][] | null>(null);
+const newFileTokens = ref<Token[][] | null>(null);
+const highlightReady = ref(false);
 
 async function highlightAll() {
-  const lines = new Set<string>();
-  for (const row of splitRows.value) {
-    if (row.kind === "line") {
-      lines.add(row.left.text);
-      lines.add(row.right.text);
-    } else if (row.kind === "buffer-left") {
-      lines.add(row.right.text);
-    } else if (row.kind === "buffer-right") {
-      lines.add(row.left.text);
-    }
-  }
+  await fetchFullFiles();
 
-  const current = tokenMap.value;
-  const unique = [...lines].filter((l) => l.trim() && !current.has(l));
-  if (!unique.length) return;
+  const [oldTokens, newTokens] = await Promise.all([
+    oldFileLines.value?.length
+      ? tokenizeBlock(oldFileLines.value, lang.value)
+      : Promise.resolve(null),
+    newFileLines.value?.length
+      ? tokenizeBlock(newFileLines.value, lang.value)
+      : Promise.resolve(null),
+  ]);
 
-  const results = await Promise.all(
-    unique.map((line) => tokenizeLine(line, lang.value)),
-  );
-
-  const updated = new Map(current);
-  for (let i = 0; i < unique.length; i++) {
-    updated.set(unique[i], results[i]);
-  }
-  tokenMap.value = updated;
+  oldFileTokens.value = oldTokens;
+  newFileTokens.value = newTokens;
+  highlightReady.value = true;
 }
 
-function getTokens(text: string): Token[] {
-  return tokenMap.value.get(text) ?? [{ content: text.replace(/\n$/, ""), color: "#fbfbfb" }];
-}
+const defaultToken = (text: string): Token[] => [{ content: text.replace(/\n$/, ""), color: "#fbfbfb" }];
 
-// ── Word-level diff ──
+function getTokensForRow(lineNumber: number | null, side: "left" | "right", fallbackText: string): Token[] {
+  if (lineNumber == null) return defaultToken(fallbackText);
+  const idx = lineNumber - 1;
+  const tokens = side === "left" ? oldFileTokens.value : newFileTokens.value;
+  return tokens?.[idx] ?? defaultToken(fallbackText);
+}
 
 function getWordSpans(text: string, pairedText: string | undefined, type: "addition" | "deletion"): { text: string; emphasis: boolean }[] | undefined {
   if (!pairedText) return undefined;
@@ -275,8 +259,6 @@ function getWordSpans(text: string, pairedText: string | undefined, type: "addit
   return spans.length ? spans : undefined;
 }
 
-// ── Line selection ──
-
 const selecting = ref(false);
 const selectionSide = ref<"left" | "right" | null>(null);
 const selectionStart = ref<number | null>(null);
@@ -297,11 +279,7 @@ function isLineSelected(lineNumber: number | null, side: "left" | "right"): bool
 }
 
 function onLineNumberMouseDown(lineNumber: number, side: "left" | "right") {
-  if (showCommentInput.value) {
-    // Don't allow new selection while comment input is open
-    // User must cancel or submit first
-    return;
-  }
+  if (showCommentInput.value) return;
   selecting.value = true;
   selectionSide.value = side;
   selectionStart.value = lineNumber;
@@ -321,8 +299,6 @@ function onMouseUp() {
   selecting.value = false;
 }
 
-// ── Hover ──
-
 const hoveredLine = ref<number | null>(null);
 const hoveredSide = ref<"left" | "right" | null>(null);
 
@@ -335,8 +311,6 @@ function onLineLeave() {
   hoveredLine.value = null;
   hoveredSide.value = null;
 }
-
-// ── Comment input ──
 
 const { commentInputActive: showCommentInput } = useChanges();
 
@@ -359,8 +333,6 @@ function clearSelection() {
   selectionSide.value = null;
 }
 
-// ── Comments lookup ──
-
 function commentsOnLine(lineNumber: number, side: "left" | "right"): ChangeComment[] {
   const diffSide = side === "left" ? "deletions" : "additions";
   return comments.filter(
@@ -373,16 +345,12 @@ function isCommentInputOnLine(lineNumber: number, side: "left" | "right"): boole
   return selectedRange.value.end === lineNumber && selectionSide.value === side;
 }
 
-// ── Hover + button ──
-
 function onPlusClick(lineNumber: number, side: "left" | "right") {
   selectionSide.value = side;
   selectionStart.value = lineNumber;
   selectionEnd.value = lineNumber;
   showCommentInput.value = true;
 }
-
-// ── Scroll sync ──
 
 const leftScrollRef = ref<HTMLElement>();
 const rightScrollRef = ref<HTMLElement>();
@@ -399,12 +367,13 @@ function syncScroll(source: "left" | "right") {
   requestAnimationFrame(() => { syncing = false; });
 }
 
-// ── Lifecycle ──
-
 watch(() => fileDiff, () => {
-  tokenMap.value = new Map();
+  highlightReady.value = false;
+  oldFileTokens.value = null;
+  newFileTokens.value = null;
+  oldFileLines.value = null;
+  newFileLines.value = null;
   expandedHunks.value = new Set();
-  fileLines.value = null;
   highlightAll();
 }, { immediate: true });
 
@@ -428,7 +397,11 @@ onUnmounted(() => {
       color: 'var(--diff-fg)',
     }"
   >
-    <div class="diff-split">
+    <div v-if="!highlightReady" class="flex h-full items-center justify-center py-12">
+      <span class="text-copy-sm text-tertiary">Loading diff...</span>
+    </div>
+
+    <div v-else class="diff-split">
       <!-- Left column (deletions / old) -->
       <div
         ref="leftScrollRef"
@@ -449,7 +422,7 @@ onUnmounted(() => {
             v-else-if="row.kind === 'line'"
             :line-number="row.left.lineNumber"
             :type="row.left.type"
-            :tokens="getTokens(row.left.text)"
+            :tokens="getTokensForRow(row.left.lineNumber, 'left', row.left.text)"
             :word-spans="row.left.type === 'deletion' ? getWordSpans(row.left.text, row.left.pairedText, 'deletion') : undefined"
             :selected="isLineSelected(row.left.lineNumber, 'left')"
             :hovered="hoveredLine === row.left.lineNumber && hoveredSide === 'left'"
@@ -463,7 +436,7 @@ onUnmounted(() => {
             v-else-if="row.kind === 'buffer-right'"
             :line-number="row.left.lineNumber"
             :type="row.left.type"
-            :tokens="getTokens(row.left.text)"
+            :tokens="getTokensForRow(row.left.lineNumber, 'left', row.left.text)"
             :selected="isLineSelected(row.left.lineNumber, 'left')"
             :hovered="hoveredLine === row.left.lineNumber && hoveredSide === 'left'"
             @mousedown-number="onLineNumberMouseDown($event, 'left')"
@@ -528,7 +501,7 @@ onUnmounted(() => {
             v-else-if="row.kind === 'line'"
             :line-number="row.right.lineNumber"
             :type="row.right.type"
-            :tokens="getTokens(row.right.text)"
+            :tokens="getTokensForRow(row.right.lineNumber, 'right', row.right.text)"
             :word-spans="row.right.type === 'addition' ? getWordSpans(row.right.text, row.right.pairedText, 'addition') : undefined"
             :selected="isLineSelected(row.right.lineNumber, 'right')"
             :hovered="hoveredLine === row.right.lineNumber && hoveredSide === 'right'"
@@ -542,7 +515,7 @@ onUnmounted(() => {
             v-else-if="row.kind === 'buffer-left'"
             :line-number="row.right.lineNumber"
             :type="row.right.type"
-            :tokens="getTokens(row.right.text)"
+            :tokens="getTokensForRow(row.right.lineNumber, 'right', row.right.text)"
             :selected="isLineSelected(row.right.lineNumber, 'right')"
             :hovered="hoveredLine === row.right.lineNumber && hoveredSide === 'right'"
             @mousedown-number="onLineNumberMouseDown($event, 'right')"

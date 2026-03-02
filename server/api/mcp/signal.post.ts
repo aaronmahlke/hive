@@ -1,7 +1,8 @@
 import { db } from "../../database";
-import { signals, sessions } from "../../database/schema";
+import { signals, sessions, worktrees } from "../../database/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { emitOnPort } from "../../services/opencode-events";
 
 /**
  * MCP Signal endpoint.
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
     })
     .returning();
 
-  // Update session status based on signal type
+  // Update session status and emit real-time event
   if (body.sessionId) {
     const statusMap: Record<string, string> = {
       question: "question",
@@ -53,6 +54,22 @@ export default defineEventHandler(async (event) => {
       .update(sessions)
       .set({ status: statusMap[body.type] || "working" })
       .where(eq(sessions.id, body.sessionId));
+
+    // Emit signal on the worktree's port so the WS connection picks it up
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, body.sessionId),
+    });
+    if (session?.worktreeId) {
+      const worktree = await db.query.worktrees.findFirst({
+        where: eq(worktrees.id, session.worktreeId),
+      });
+      if (worktree?.opencodePort) {
+        emitOnPort(worktree.opencodePort, {
+          type: "signal",
+          properties: signal,
+        });
+      }
+    }
   }
 
   // For questions, long-poll until resolved
@@ -61,7 +78,12 @@ export default defineEventHandler(async (event) => {
     return { answer };
   }
 
-  // For non-blocking signals, return immediately
+  // Non-blocking signals don't need user action — mark as resolved immediately
+  await db
+    .update(signals)
+    .set({ resolved: true })
+    .where(eq(signals.id, signalId));
+
   return { success: true, signalId };
 });
 

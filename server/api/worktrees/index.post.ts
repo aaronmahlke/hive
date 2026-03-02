@@ -68,7 +68,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Start OpenCode server
-  const pid = startOpenCodeServer(worktreePath, port);
+  const pid = startOpenCodeServer(worktreePath, port, undefined, body.projectId);
 
   // Update PID in database
   await db

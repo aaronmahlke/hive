@@ -1,6 +1,13 @@
 import simpleGit from "simple-git";
-import { existsSync } from "fs";
-import { join, dirname } from "path";
+import { existsSync, readdirSync, readFileSync } from "fs";
+import { join, dirname, resolve } from "path";
+import { spawn } from "child_process";
+
+export type WorktreeInfo = {
+  path: string;
+  branch: string;
+  isMain: boolean;
+};
 
 /**
  * Create a git worktree for a branch.
@@ -69,31 +76,101 @@ export async function removeWorktree(
 }
 
 /**
- * List existing worktrees for a repo.
+ * List all worktrees for a repo by reading the .git/worktrees/ directory.
+ * This is faster than running `git worktree list` as a subprocess.
+ * Returns the main worktree first, then linked worktrees.
  */
-export async function listWorktrees(
-  projectPath: string,
-): Promise<{ path: string; branch: string }[]> {
-  const git = simpleGit(projectPath);
-  const result = await git.raw(["worktree", "list", "--porcelain"]);
+export function listWorktrees(projectPath: string): WorktreeInfo[] {
+  const results: WorktreeInfo[] = [];
 
-  const worktrees: { path: string; branch: string }[] = [];
-  let currentPath = "";
-  let currentBranch = "";
+  // Get the main worktree's branch from HEAD
+  const mainBranch = getHeadBranch(projectPath);
+  results.push({
+    path: projectPath,
+    branch: mainBranch || "HEAD",
+    isMain: true,
+  });
 
-  for (const line of result.split("\n")) {
-    if (line.startsWith("worktree ")) {
-      currentPath = line.replace("worktree ", "");
-    } else if (line.startsWith("branch ")) {
-      currentBranch = line.replace("branch refs/heads/", "");
-    } else if (line === "") {
-      if (currentPath && currentBranch) {
-        worktrees.push({ path: currentPath, branch: currentBranch });
-      }
-      currentPath = "";
-      currentBranch = "";
-    }
+  // Read linked worktrees from .git/worktrees/
+  const worktreesDir = join(projectPath, ".git", "worktrees");
+  if (!existsSync(worktreesDir)) {
+    return results;
   }
 
-  return worktrees;
+  try {
+    const entries = readdirSync(worktreesDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+
+      const wtDir = join(worktreesDir, entry.name);
+
+      // Read the gitdir file to get the worktree path
+      const gitdirPath = join(wtDir, "gitdir");
+      if (!existsSync(gitdirPath)) continue;
+
+      const gitdir = readFileSync(gitdirPath, "utf-8").trim();
+      // gitdir points to the .git file inside the worktree directory
+      const wtPath = resolve(dirname(gitdir));
+
+      // Read HEAD to get the branch
+      const headPath = join(wtDir, "HEAD");
+      let branch = entry.name;
+      if (existsSync(headPath)) {
+        const head = readFileSync(headPath, "utf-8").trim();
+        if (head.startsWith("ref: refs/heads/")) {
+          branch = head.replace("ref: refs/heads/", "");
+        }
+      }
+
+      // Only include if the worktree directory actually exists
+      if (existsSync(wtPath)) {
+        results.push({ path: wtPath, branch, isMain: false });
+      }
+    }
+  } catch (e) {
+    console.warn("[worktree] Failed to read .git/worktrees:", e);
+  }
+
+  return results;
+}
+
+/**
+ * Read the current branch from a repo's HEAD file.
+ */
+function getHeadBranch(projectPath: string): string | null {
+  try {
+    const headPath = join(projectPath, ".git", "HEAD");
+    if (!existsSync(headPath)) return null;
+    const head = readFileSync(headPath, "utf-8").trim();
+    if (head.startsWith("ref: refs/heads/")) {
+      return head.replace("ref: refs/heads/", "");
+    }
+    // Detached HEAD — return short hash
+    return head.slice(0, 8);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Install dependencies in a worktree directory.
+ */
+export function installDeps(
+  worktreePath: string,
+  installCommand: string,
+): Promise<{ success: boolean; output: string }> {
+  return new Promise((resolve) => {
+    const [cmd, ...args] = installCommand.split(" ");
+    let output = "";
+
+    const child = spawn(cmd, args, {
+      cwd: worktreePath,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    child.stdout?.on("data", (data: Buffer) => { output += data.toString(); });
+    child.stderr?.on("data", (data: Buffer) => { output += data.toString(); });
+    child.on("exit", (code) => { resolve({ success: code === 0, output }); });
+    child.on("error", (err) => { resolve({ success: false, output: err.message }); });
+  });
 }

@@ -45,6 +45,37 @@ export async function tokenizeLine(code: string, lang: string): Promise<Token[]>
   })) ?? [{ content: code, color: "#fbfbfb" }];
 }
 
+/**
+ * Tokenize a block of lines as a single unit, preserving cross-line
+ * syntax state (multi-line strings, comments, template literals, etc.).
+ *
+ * Returns one Token[] per input line.
+ */
+export async function tokenizeBlock(lines: string[], lang: string): Promise<Token[][]> {
+  if (!lines.length) return [];
+
+  const hl = await getDiffHighlighter();
+  const loaded = hl.getLoadedLanguages();
+  const language = loaded.includes(lang) ? lang : "text";
+
+  // Join all lines into a single string and tokenize at once.
+  // Strip trailing \n from each line before joining so shiki sees clean line breaks.
+  const fullText = lines.map((l) => l.replace(/\n$/, "")).join("\n");
+
+  const result = hl.codeToTokens(fullText, {
+    lang: language,
+    theme: "pierre-dark",
+  });
+
+  // result.tokens is an array of token arrays, one per line
+  return result.tokens.map((lineTokens: ThemedToken[]) =>
+    lineTokens.map((t) => ({
+      content: t.content,
+      color: t.color || "#fbfbfb",
+    })),
+  );
+}
+
 export function getLangFromPath(filePath: string): string {
   const ext = filePath.split(".").pop()?.toLowerCase() || "";
   const name = filePath.split("/").pop()?.toLowerCase() || "";
