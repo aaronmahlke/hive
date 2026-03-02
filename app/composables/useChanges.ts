@@ -338,6 +338,23 @@ export function useChanges() {
     }
   }
 
+  async function push() {
+    const id = projectId.value;
+    if (!id || pushing.value) return false;
+
+    pushing.value = true;
+    try {
+      await $fetch(`/api/projects/${id}/push`, { method: "POST" });
+      await fetchChanges();
+      return true;
+    } catch (e: any) {
+      console.error("[changes] Push failed:", e);
+      return false;
+    } finally {
+      pushing.value = false;
+    }
+  }
+
   function init() {
     const id = projectId.value;
     if (id && id !== activeProjectId) {
@@ -371,6 +388,8 @@ export function useChanges() {
     commitError,
     branch,
     repoName,
+    unpushedCount,
+    pushing,
 
     fetchChanges,
     fetchComments,
@@ -383,6 +402,7 @@ export function useChanges() {
     closeOverlay,
     requestChanges,
     commit,
+    push,
     init,
   };
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   ArrowPathIcon,
+  ArrowUpTrayIcon,
   ChatBubbleLeftIcon,
   CheckCircleIcon,
   CheckIcon,
@@ -32,6 +33,8 @@ type Props = {
   commitError: string | null;
   branch: string;
   repoName: string;
+  unpushedCount: number;
+  pushing: boolean;
 };
 
 type Emits = {
@@ -40,6 +43,7 @@ type Emits = {
   "stage-all": [];
   "request-changes": [];
   "commit": [message: string];
+  "push": [];
   refresh: [];
 };
 
@@ -55,6 +59,8 @@ const {
   commitError = null,
   branch = "",
   repoName = "",
+  unpushedCount = 0,
+  pushing = false,
 } = defineProps<Props>();
 
 const emit = defineEmits<Emits>();
@@ -334,6 +340,19 @@ const statusColors: Record<string, string> = {
           </OButton>
         </div>
       </div>
+    </div>
+    <!-- Push button -->
+    <div v-if="unpushedCount > 0" class="border-edge border-t p-2">
+      <OButton
+        variant="transparent"
+        class="w-full"
+        :icon-left="ArrowUpTrayIcon"
+        :loading="pushing"
+        :disabled="pushing"
+        @click="emit('push')"
+      >
+        Push {{ unpushedCount }} commit{{ unpushedCount !== 1 ? "s" : "" }}
+      </OButton>
     </div>
     <!-- Repo + branch status bar -->
     <div v-if="repoName || branch" class="border-edge text-copy text-tertiary break-all border-t px-3 py-1.5 font-mono">

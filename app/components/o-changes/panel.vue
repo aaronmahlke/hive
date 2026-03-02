@@ -11,10 +11,13 @@ const {
   commitError,
   branch,
   repoName,
+  unpushedCount,
+  pushing,
   selectFile,
   toggleViewed,
   requestChanges,
   commit,
+  push,
   fetchChanges,
   init,
 } = useChanges();
@@ -72,11 +75,14 @@ onKeyStroke("Escape", () => {
     :commit-error="commitError"
     :branch="branch"
     :repo-name="repoName"
+    :unpushed-count="unpushedCount"
+    :pushing="pushing"
     @select-file="selectFile"
     @toggle-viewed="toggleViewed"
     @stage-all="stageAll"
     @request-changes="requestChanges"
     @commit="commit($event)"
+    @push="push"
     @refresh="fetchChanges"
   />
 </template>
