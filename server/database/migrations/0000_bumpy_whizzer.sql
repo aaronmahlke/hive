@@ -1,3 +1,17 @@
+CREATE TABLE `change_comments` (
+	`id` text PRIMARY KEY NOT NULL,
+	`project_id` text NOT NULL,
+	`session_id` text,
+	`file_path` text NOT NULL,
+	`start_line` integer NOT NULL,
+	`end_line` integer NOT NULL,
+	`side` text,
+	`content` text NOT NULL,
+	`resolved` integer DEFAULT false NOT NULL,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
 CREATE TABLE `dev_profile` (
 	`id` text PRIMARY KEY NOT NULL,
 	`key` text NOT NULL,
