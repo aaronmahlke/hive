@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
   const port = await allocatePort();
   console.log(`[start] Port allocated :${port}: ${Date.now() - t2}ms`);
 
-  const pid = startOpenCodeServer(project.path, port, undefined, id);
+  const pid = startOpenCodeServer(project.path, port, undefined, id, project.opencodeConfigPath || undefined);
   console.log(`[start] Spawned opencode (pid=${pid}) on :${port}`);
 
   // Store port immediately - don't wait for MCP registration

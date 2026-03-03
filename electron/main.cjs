@@ -51,6 +51,22 @@ ipcMain.handle("dialog:openDirectory", async () => {
   return result.filePaths[0];
 });
 
+ipcMain.handle("dialog:openFile", async (_event, options) => {
+  if (!mainWindow) return null;
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openFile"],
+    title: options?.title || "Select a file",
+    filters: options?.filters || [],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return result.filePaths[0];
+});
+
 // ─── App Lifecycle ───
 
 app.whenReady().then(() => {

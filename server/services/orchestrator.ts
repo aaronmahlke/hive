@@ -65,7 +65,7 @@ export async function delegateTask(opts: {
   const sessionId = nanoid();
 
   // 4. Start OpenCode server (registers signal MCP with sessionId + projectId)
-  const pid = startOpenCodeServer(worktreePath, port, sessionId, opts.projectId);
+  const pid = startOpenCodeServer(worktreePath, port, sessionId, opts.projectId, project.opencodeConfigPath || undefined);
   await db
     .update(worktrees)
     .set({ opencodePid: pid })

@@ -35,11 +35,22 @@ export function startOpenCodeServer(
   port: number,
   sessionId?: string,
   projectId?: string,
+  opencodeConfigPath?: string,
 ): number {
   const key = `opencode:${worktreePath}`;
 
   // Kill existing if running
   stopProcess(key);
+
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    TERM: "dumb",
+  };
+  if (opencodeConfigPath) {
+    env.OPENCODE_CONFIG = opencodeConfigPath;
+  }
+
+  console.log(`[opencode:${port}] Starting in ${worktreePath} (config: ${opencodeConfigPath || "default"})`);
 
   const child = spawn(
     "opencode",
@@ -48,10 +59,7 @@ export function startOpenCodeServer(
       cwd: worktreePath,
       stdio: ["ignore", "pipe", "pipe"],
       detached: false,
-      env: {
-        ...process.env,
-        TERM: "dumb",
-      },
+      env,
     },
   );
 

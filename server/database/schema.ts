@@ -7,6 +7,7 @@ export const projects = sqliteTable("projects", {
   pkgManager: text("pkg_manager"),
   devCommand: text("dev_command"),
   installCommand: text("install_command"),
+  opencodeConfigPath: text("opencode_config_path"),
   configOverride: text("config_override", { mode: "json" }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

@@ -5,6 +5,10 @@ const { data: profile, refresh } = await useFetch("/api/profile", {
   default: () => [],
 });
 
+const { data: projectList, refresh: refreshProjects } = await useFetch("/api/projects", {
+  default: () => [],
+});
+
 const categories = ["style", "preference", "convention", "rule"] as const;
 
 const newEntry = ref({
@@ -47,6 +51,50 @@ const groupedProfile = computed(() => {
   }
   return grouped;
 });
+
+const savingConfigPath = ref<Record<string, boolean>>({});
+
+async function browseConfigPath(projectId: string) {
+  let selectedPath: string | null = null;
+
+  if (window.electronAPI) {
+    selectedPath = await window.electronAPI.openFile({
+      title: "Select OpenCode config file",
+      filters: [
+        { name: "JSON", extensions: ["json", "jsonc"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
+    });
+  } else {
+    selectedPath = prompt("Enter the config file path:");
+  }
+
+  if (!selectedPath) return;
+
+  savingConfigPath.value[projectId] = true;
+  try {
+    await $fetch(`/api/projects/${projectId}`, {
+      method: "PATCH",
+      body: { opencodeConfigPath: selectedPath },
+    });
+    await refreshProjects();
+  } finally {
+    savingConfigPath.value[projectId] = false;
+  }
+}
+
+async function clearConfigPath(projectId: string) {
+  savingConfigPath.value[projectId] = true;
+  try {
+    await $fetch(`/api/projects/${projectId}`, {
+      method: "PATCH",
+      body: { opencodeConfigPath: null },
+    });
+    await refreshProjects();
+  } finally {
+    savingConfigPath.value[projectId] = false;
+  }
+}
 </script>
 
 <template>
@@ -55,6 +103,60 @@ const groupedProfile = computed(() => {
 
     <div class="flex-1 overflow-auto p-6">
       <div class="mx-auto max-w-2xl">
+        <h2 class="text-title-sm text-primary mb-4">Project Configs</h2>
+        <p class="text-copy text-secondary mb-6">
+          Set a custom OpenCode config file per project. All worktrees in a
+          project inherit its config.
+        </p>
+
+        <div v-if="projectList?.length" class="mb-8 flex flex-col gap-2">
+          <div
+            v-for="proj in projectList"
+            :key="proj.id"
+            class="bg-surface-1 border-edge rounded-md border px-3 py-2"
+          >
+            <div class="flex items-center justify-between">
+              <div class="min-w-0">
+                <span class="text-copy text-primary font-medium">{{ proj.name }}</span>
+                <span
+                  v-if="proj.opencodeConfigPath"
+                  class="text-copy-sm text-secondary ml-2 font-mono"
+                >
+                  {{ proj.opencodeConfigPath }}
+                </span>
+                <span v-else class="text-copy-sm text-tertiary ml-2">
+                  Using global config
+                </span>
+              </div>
+              <div class="flex items-center gap-1">
+                <OButton
+                  variant="transparent"
+                  size="xs"
+                  :loading="savingConfigPath[proj.id]"
+                  @click="browseConfigPath(proj.id)"
+                >
+                  {{ proj.opencodeConfigPath ? 'Change' : 'Browse' }}
+                </OButton>
+                <OButton
+                  v-if="proj.opencodeConfigPath"
+                  variant="transparent"
+                  size="xs"
+                  :loading="savingConfigPath[proj.id]"
+                  @click="clearConfigPath(proj.id)"
+                >
+                  Clear
+                </OButton>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          v-else
+          class="bg-surface-1 border-edge text-copy text-tertiary mb-8 rounded-lg border p-8 text-center"
+        >
+          No projects yet. Open a project first.
+        </div>
+
         <h2 class="text-title-sm text-primary mb-4">Developer Profile</h2>
         <p class="text-copy text-secondary mb-6">
           These preferences are injected into agent prompts so they write code
@@ -87,7 +189,7 @@ const groupedProfile = computed(() => {
 
         <div class="border-edge mt-6 border-t pt-6">
           <h3 class="text-label text-primary mb-3">Add Preference</h3>
-          <form @submit.prevent="addEntry" class="flex flex-col gap-3">
+          <form class="flex flex-col gap-3" @submit.prevent="addEntry">
             <div class="flex gap-2">
               <select
                 v-model="newEntry.category"

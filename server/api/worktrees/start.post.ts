@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const pid = startOpenCodeServer(body.worktreePath, port, undefined, body.projectId);
+    const pid = startOpenCodeServer(body.worktreePath, port, undefined, body.projectId, project.opencodeConfigPath || undefined);
     await db
       .update(worktrees)
       .set({ opencodePid: pid })
@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const port = await allocatePort();
-  const pid = startOpenCodeServer(body.worktreePath, port, undefined, body.projectId);
+  const pid = startOpenCodeServer(body.worktreePath, port, undefined, body.projectId, project.opencodeConfigPath || undefined);
 
   await db
     .update(worktrees)
