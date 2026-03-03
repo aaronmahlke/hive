@@ -73,6 +73,44 @@ function closeTab(projectId: string, e: Event) {
     }
   }
 }
+
+// --- Tab switching with Cmd+Shift+Arrow keys ---
+onKeyStroke("ArrowRight", (e) => {
+  if (!e.metaKey || !e.shiftKey) return;
+  e.preventDefault();
+  if (!openTabs.value.length) return;
+
+  const idx = currentProjectId.value
+    ? openTabs.value.indexOf(currentProjectId.value)
+    : -1;
+
+  // Wrap around: from last tab go to first, from home go to first
+  const nextIdx = idx === -1 || idx >= openTabs.value.length - 1
+    ? 0
+    : idx + 1;
+
+  router.push(`/project/${openTabs.value[nextIdx]}`);
+});
+
+onKeyStroke("ArrowLeft", (e) => {
+  if (!e.metaKey || !e.shiftKey) return;
+  e.preventDefault();
+  if (!openTabs.value.length) return;
+
+  const idx = currentProjectId.value
+    ? openTabs.value.indexOf(currentProjectId.value)
+    : -1;
+
+  // Wrap around: from first tab go to last, from home go to last
+  const prevIdx = idx <= 0
+    ? openTabs.value.length - 1
+    : idx - 1;
+
+  router.push(`/project/${openTabs.value[prevIdx]}`);
+});
+
+// --- Drag-to-reorder tabs ---
+const { containerRef: tabListRef, draggingIndex } = useDragReorder(openTabs);
 </script>
 
 <template>
@@ -87,37 +125,40 @@ function closeTab(projectId: string, e: Event) {
       </NuxtLink>
     </OHover>
 
-    <OTooltip
-      v-for="proj in tabProjects"
-      :key="proj!.id"
-      :content="proj!.name"
-      side="bottom"
-    >
-      <OHover
-        :active="currentProjectId === proj!.id"
-        class="cursor-default"
+    <div ref="tabListRef" class="flex items-center gap-0.5">
+      <OTooltip
+        v-for="(proj, i) in tabProjects"
+        :key="proj!.id"
+        :content="proj!.name"
+        side="bottom"
       >
-        <div class="flex items-center">
-          <NuxtLink
-            :to="`/project/${proj!.id}`"
-            class="text-copy-sm max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-1 outline-none"
-            :class="
-              currentProjectId === proj!.id ? 'text-primary' : 'text-tertiary'
-            "
-          >
-            {{ proj!.name }}
-          </NuxtLink>
-          <button
-            type="button"
-            class="text-tertiary hover:text-primary grid size-5 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/h:opacity-100"
-            :class="currentProjectId === proj!.id ? 'opacity-60' : ''"
-            @click="closeTab(proj!.id, $event)"
-          >
-            <XMarkIcon class="size-3" />
-          </button>
-        </div>
-      </OHover>
-    </OTooltip>
+        <OHover
+          :active="currentProjectId === proj!.id"
+          class="cursor-default"
+          :class="draggingIndex === i ? 'opacity-80' : ''"
+        >
+          <div class="flex items-center">
+            <NuxtLink
+              :to="`/project/${proj!.id}`"
+              class="text-copy-sm max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-1 outline-none"
+              :class="
+                currentProjectId === proj!.id ? 'text-primary' : 'text-tertiary'
+              "
+            >
+              {{ proj!.name }}
+            </NuxtLink>
+            <button
+              type="button"
+              class="text-tertiary hover:text-primary grid size-5 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/h:opacity-100"
+              :class="currentProjectId === proj!.id ? 'opacity-60' : ''"
+              @click="closeTab(proj!.id, $event)"
+            >
+              <XMarkIcon class="size-3" />
+            </button>
+          </div>
+        </OHover>
+      </OTooltip>
+    </div>
 
     <OHover class="cursor-default">
       <button
