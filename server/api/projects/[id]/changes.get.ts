@@ -71,14 +71,37 @@ export default defineEventHandler(async (event) => {
         modifiedAfterStaged: hasChange(f.index) && hasChange(f.working_dir),
       }));
 
+    // Compute ahead count relative to origin/<branch> (not the tracking branch)
+    const currentBranch = status.current || "";
+    const remoteBranch = `origin/${currentBranch}`;
+    let ahead = 0;
+    let remoteExists = false;
+
+    if (currentBranch) {
+      try {
+        const count = await git.raw(["rev-list", "--count", `${remoteBranch}..HEAD`]);
+        ahead = parseInt(count.trim(), 10) || 0;
+        remoteExists = true;
+      } catch {
+        // Remote branch doesn't exist — count all commits as unpushed
+        try {
+          const total = await git.raw(["rev-list", "--count", "HEAD"]);
+          ahead = parseInt(total.trim(), 10) || 0;
+        } catch {
+          ahead = 0;
+        }
+      }
+    }
+
     return {
       diff: combinedDiff || "",
       stagedDiff: stagedDiff || "",
       unstagedDiff: unstagedDiff || "",
       files,
-      ahead: status.ahead,
+      ahead,
       behind: status.behind,
-      branch: status.current || null,
+      branch: currentBranch || null,
+      remoteExists,
     };
   } catch (e: any) {
     console.error(`[changes] Error for project ${id}:`, e.message);

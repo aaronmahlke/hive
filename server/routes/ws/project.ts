@@ -86,15 +86,23 @@ export default defineWebSocketHandler({
       try {
         const eventType = event.type;
 
+        const msgSessionId = event.properties?.sessionID
+          || event.properties?.info?.sessionID;
+
         if (eventType === "message.updated") {
+          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:updated", data: event.properties }));
         } else if (eventType === "message.part.updated") {
+          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:part.updated", data: event.properties }));
         } else if (eventType === "message.removed") {
+          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:removed", data: event.properties }));
         } else if (eventType === "message.part.delta") {
+          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:part.delta", data: event.properties }));
         } else if (eventType === "message.part.removed") {
+          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:part.removed", data: event.properties }));
         } else if (eventType === "session.status") {
           const eventSessionId = event.properties?.sessionID;

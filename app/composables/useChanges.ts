@@ -32,6 +32,7 @@ const loading = ref(false);
 const ahead = ref(0);
 const behind = ref(0);
 const branch = ref<string | null>(null);
+const remoteExists = ref(false);
 const comments = ref<ChangeComment[]>([]);
 const viewedFiles = ref(new Set<string>());
 const selectedFile = ref<string | null>(null);
@@ -105,6 +106,7 @@ export function useChanges() {
       ahead.value = (data as any).ahead ?? 0;
       behind.value = (data as any).behind ?? 0;
       branch.value = (data as any).branch ?? null;
+      remoteExists.value = (data as any).remoteExists ?? false;
       viewedFiles.value = new Set(
         files.value.filter((f) => f.staged).map((f) => f.path),
       );
@@ -493,6 +495,7 @@ export function useChanges() {
     ahead,
     behind,
     branch,
+    remoteExists,
     pushing,
     pushError,
 

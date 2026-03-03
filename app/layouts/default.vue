@@ -6,10 +6,23 @@ const route = useRoute();
 const hasProjectOpen = computed(() => !!route.params.id);
 const { selectedFile } = useChanges();
 const isDiffOpen = computed(() => !!selectedFile.value);
+
+const { toggle: togglePalette } = useCommandPalette();
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    e.preventDefault();
+    togglePalette();
+  }
+}
+
+onMounted(() => document.addEventListener("keydown", onGlobalKeydown));
+onUnmounted(() => document.removeEventListener("keydown", onGlobalKeydown));
 </script>
 
 <template>
   <TooltipProvider :delay-duration="400">
+  <OCommandPalette />
   <div class="bg-base-0 flex h-screen flex-col overflow-hidden">
     <header class="flex h-9 shrink-0 items-center">
       <div class="w-20 shrink-0" />

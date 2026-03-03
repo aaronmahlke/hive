@@ -35,6 +35,7 @@ type Props = {
   ahead: number;
   behind: number;
   branch: string | null;
+  remoteExists: boolean;
   pushing: boolean;
   pushError: string | null;
 };
@@ -62,6 +63,7 @@ const {
   ahead = 0,
   behind = 0,
   branch = null,
+  remoteExists = false,
   pushing = false,
   pushError = null,
 } = defineProps<Props>();
@@ -347,10 +349,15 @@ const statusColors: Record<string, string> = {
         class="w-full"
         :icon-left="ArrowUpTrayIcon"
         :loading="pushing"
+        :title="remoteExists ? `Push ${ahead} commit${ahead !== 1 ? 's' : ''} to origin/${branch}` : `Push branch ${branch} to origin`"
         @click="emit('push')"
       >
-        Push
-        <span class="text-tertiary ml-0.5">({{ ahead }})</span>
+        <template v-if="remoteExists">
+          Push <span class="text-tertiary ml-0.5">({{ ahead }})</span>
+        </template>
+        <template v-else>
+          Push Branch
+        </template>
       </OButton>
       <p v-if="pushError" class="text-copy-xs text-danger px-0.5">
         {{ pushError }}

@@ -12,6 +12,7 @@ const {
   ahead,
   behind,
   branch,
+  remoteExists,
   pushing,
   pushError,
   selectFile,
@@ -81,6 +82,7 @@ onKeyStroke("Escape", () => {
     :ahead="ahead"
     :behind="behind"
     :branch="branch"
+    :remote-exists="remoteExists"
     :pushing="pushing"
     :push-error="pushError"
     @select-file="(path: string, mode?: 'combined' | 'staged' | 'unstaged') => selectFile(path, mode)"
