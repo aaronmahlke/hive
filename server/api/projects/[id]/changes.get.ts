@@ -37,18 +37,7 @@ export default defineEventHandler(async (event) => {
   try {
     // Get file status first — this always works
     const status = await git.status();
-    const files = [
-      ...status.modified.map((path) => ({ path, status: "M" as const })),
-      ...status.created.map((path) => ({ path, status: "A" as const })),
-      ...status.deleted.map((path) => ({ path, status: "D" as const })),
-      ...status.renamed.map((r) => ({ path: r.to, status: "R" as const })),
-      ...status.not_added.map((path) => ({ path, status: "?" as const })),
-    ];
 
-    // Try to get a diff
-    let diff = "";
-
-    // Check if repo has any commits
     let hasCommits = true;
     try {
       await git.log(["-1"]);
@@ -56,28 +45,41 @@ export default defineEventHandler(async (event) => {
       hasCommits = false;
     }
 
-    if (hasCommits) {
-      // Normal case: diff against HEAD (shows both staged + unstaged vs last commit)
-      diff = await git.diff(["HEAD"]);
+    let combinedDiff = "";
+    let stagedDiff = "";
+    let unstagedDiff = "";
 
-      if (!diff) {
-        // Maybe only staged changes
-        diff = await git.diff(["--cached"]);
-      }
-      if (!diff) {
-        // Maybe only unstaged changes
-        diff = await git.diff();
-      }
+    if (hasCommits) {
+      [combinedDiff, stagedDiff, unstagedDiff] = await Promise.all([
+        git.diff(["HEAD"]),
+        git.diff(["--cached"]),
+        git.diff(),
+      ]);
     } else {
-      // No commits yet — diff staged files against empty tree
-      diff = await git.diff(["--cached"]);
+      stagedDiff = await git.diff(["--cached"]);
+      combinedDiff = stagedDiff;
     }
 
-    console.log(
-      `[changes] project=${id} hasCommits=${hasCommits} files=${files.length} diffBytes=${diff.length}`,
-    );
+    const hasChange = (s: string) => s !== " " && s !== "" && s !== "?" && s !== "!";
 
-    return { diff: diff || "", files };
+    const files = status.files
+      .filter((f) => hasChange(f.index) || hasChange(f.working_dir) || f.working_dir === "?")
+      .map((f) => ({
+        path: f.path,
+        status: hasChange(f.index) ? f.index : f.working_dir || "?",
+        staged: hasChange(f.index),
+        modifiedAfterStaged: hasChange(f.index) && hasChange(f.working_dir),
+      }));
+
+    return {
+      diff: combinedDiff || "",
+      stagedDiff: stagedDiff || "",
+      unstagedDiff: unstagedDiff || "",
+      files,
+      ahead: status.ahead,
+      behind: status.behind,
+      branch: status.current || null,
+    };
   } catch (e: any) {
     console.error(`[changes] Error for project ${id}:`, e.message);
     return { diff: "", files: [] };

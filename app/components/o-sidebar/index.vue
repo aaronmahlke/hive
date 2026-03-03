@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import {
-  CodeBracketIcon,
   PlusIcon,
-  HomeIcon,
   FolderIcon,
   UserGroupIcon,
-  XMarkIcon,
 } from "@heroicons/vue/16/solid";
 
 type SidebarTab = "agents" | "files";
@@ -99,13 +96,6 @@ async function deleteWorktree(wt: any, e: Event) {
   }
 }
 
-const statusClasses: Record<string, string> = {
-  idle: "bg-inverse/30",
-  working: "bg-accent",
-  question: "bg-warn",
-  done: "bg-success",
-  error: "bg-danger",
-};
 
 // File tree for the active worktree
 const activeWorktreeObj = computed(() => {
@@ -189,84 +179,31 @@ const { data: fileTree, refresh: refreshFileTree } = await useFetch(
       </div>
 
       <div v-else class="flex flex-col gap-0.5">
-        <!-- Main worktree -->
-        <OHover
+        <OSidebarWorktreeItem
           v-if="mainWorktree"
-          full-width
+          is-main
+          :branch-name="mainWorktree.branchName"
+          :agent-status="mainWorktree.agentStatus"
+          :pending-signals="mainWorktree.pendingSignals"
           :active="isActive(null)"
-          class="cursor-pointer"
           @click="selectWorktree(mainWorktree)"
-        >
-          <div class="flex w-full items-center justify-between px-2 py-1.5">
-            <div class="flex min-w-0 items-center gap-2">
-              <HomeIcon class="text-tertiary size-3.5 shrink-0" />
-              <span class="text-copy-sm text-primary truncate">
-                {{ mainWorktree.branchName }}
-              </span>
-            </div>
-            <div class="flex items-center gap-1">
-              <span
-                v-if="mainWorktree.pendingSignals > 0"
-                class="bg-warn text-warn-on text-copy-xs grid size-4 place-items-center rounded-full font-medium"
-              >
-                {{ mainWorktree.pendingSignals }}
-              </span>
-              <span
-                class="inline-block size-2 rounded-full"
-                :class="[
-                  statusClasses[mainWorktree.agentStatus] || statusClasses.idle,
-                  mainWorktree.agentStatus === 'working' ? 'animate-pulse' : '',
-                ]"
-              />
-            </div>
-          </div>
-        </OHover>
+        />
 
-        <!-- Linked worktrees -->
         <template v-if="linkedWorktrees.length">
           <div class="text-copy-xs text-tertiary mt-2 mb-0.5 px-2 font-medium uppercase tracking-wide">
             Worktrees
           </div>
-          <OHover
+          <OSidebarWorktreeItem
             v-for="wt in linkedWorktrees"
             :key="wt.path"
-            full-width
+            :branch-name="wt.branchName"
+            :agent-status="wt.agentStatus"
+            :pending-signals="wt.pendingSignals"
             :active="isActive(wt.path)"
-            class="cursor-pointer"
+            removable
             @click="selectWorktree(wt)"
-          >
-            <div class="flex w-full items-center justify-between px-2 py-1.5 pl-4">
-              <div class="flex min-w-0 items-center gap-2">
-                <CodeBracketIcon class="text-tertiary size-3.5 shrink-0" />
-                <span class="text-copy-sm text-primary truncate">
-                  {{ wt.branchName }}
-                </span>
-              </div>
-              <div class="flex items-center gap-1">
-                <span
-                  v-if="wt.pendingSignals > 0"
-                  class="bg-warn text-warn-on text-copy-xs grid size-4 place-items-center rounded-full font-medium"
-                >
-                  {{ wt.pendingSignals }}
-                </span>
-                <button
-                  type="button"
-                  class="grid size-4 place-items-center rounded"
-                  title="Remove worktree"
-                  @click="deleteWorktree(wt, $event)"
-                >
-                  <XMarkIcon class="text-tertiary hover:text-danger hidden size-3 group-hover/h:block" />
-                  <span
-                    class="inline-block size-2 rounded-full group-hover/h:hidden"
-                    :class="[
-                      statusClasses[wt.agentStatus] || statusClasses.idle,
-                      wt.agentStatus === 'working' ? 'animate-pulse' : '',
-                    ]"
-                  />
-                </button>
-              </div>
-            </div>
-          </OHover>
+            @remove="deleteWorktree(wt, $event)"
+          />
         </template>
 
         <div

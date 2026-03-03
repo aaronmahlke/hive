@@ -74,6 +74,7 @@ const headerTitle = computed(() => {
 // Changes overlay state
 const {
   selectedFile,
+  selectedDiffMode,
   selectedFileDiff,
   selectedFileContent,
   loadingFileContent,
@@ -120,6 +121,7 @@ const isSelectedFileViewed = computed(() =>
       :loading-content="loadingFileContent"
       :comments="selectedFileComments"
       :viewed="isSelectedFileViewed"
+      :diff-mode="selectedDiffMode"
       @close="closeOverlay"
       @toggle-viewed="markViewedAndNext(selectedFile!)"
       @add-comment="addComment($event)"

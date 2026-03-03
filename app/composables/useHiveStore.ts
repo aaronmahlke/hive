@@ -26,12 +26,52 @@ type Signal = {
   resolved: boolean;
 };
 
+type PermissionRequest = {
+  id: string;
+  sessionID: string;
+  permission: string;
+  patterns: string[];
+  metadata: Record<string, any>;
+  always: string[];
+  tool?: { messageID: string; callID: string };
+};
+
+type QuestionOption = {
+  label: string;
+  description: string;
+};
+
+type QuestionInfo = {
+  question: string;
+  header: string;
+  options: QuestionOption[];
+  multiple?: boolean;
+  custom?: boolean;
+};
+
+type QuestionRequest = {
+  id: string;
+  sessionID: string;
+  questions: QuestionInfo[];
+  tool?: { messageID: string; callID: string };
+};
+
+type AnsweredQuestion = {
+  id: string;
+  questions: { question: string; header: string }[];
+  answers: string[][];
+  toolCallID?: string;
+};
+
 type ConnectionState = {
   port: number | null;
   sessionId: string | null;
   worktreeId: string | null;
   isWorking: boolean;
   pendingQuestions: Signal[];
+  pendingPermissions: PermissionRequest[];
+  pendingOcQuestions: QuestionRequest[];
+  answeredQuestions: AnsweredQuestion[];
   modelName: string;
   connected: boolean;
   initializing: boolean;
@@ -76,6 +116,9 @@ function ensureState(key: string): ConnectionState {
       worktreeId: null,
       isWorking: false,
       pendingQuestions: [],
+      pendingPermissions: [],
+      pendingOcQuestions: [],
+      answeredQuestions: [],
       modelName: "",
       connected: false,
       initializing: false,
@@ -270,6 +313,23 @@ function handleWsMessage(key: string, event: MessageEvent) {
       );
       break;
 
+    case "permission:asked":
+      s.pendingPermissions = [...s.pendingPermissions.filter((p) => p.id !== msg.data.id), msg.data];
+      break;
+
+    case "permission:replied":
+      s.pendingPermissions = s.pendingPermissions.filter((p) => p.id !== msg.data.requestID);
+      break;
+
+    case "question:asked":
+      console.log("[store] question:asked received:", msg.data.id, msg.data.questions?.[0]?.question?.slice(0, 60));
+      s.pendingOcQuestions = [...s.pendingOcQuestions.filter((q) => q.id !== msg.data.id), msg.data];
+      break;
+
+    case "question:resolved":
+      s.pendingOcQuestions = s.pendingOcQuestions.filter((q) => q.id !== msg.data.requestID);
+      break;
+
     case "connected":
       s.connected = true;
       s.initializing = false;
@@ -462,6 +522,9 @@ export function useHiveStore() {
       initializing: computed(() => state[key]?.initializing ?? false),
       modelName: computed(() => state[key]?.modelName ?? ""),
       pendingQuestions: computed(() => state[key]?.pendingQuestions ?? []),
+      pendingPermissions: computed(() => state[key]?.pendingPermissions ?? []),
+      pendingOcQuestions: computed(() => state[key]?.pendingOcQuestions ?? []),
+      answeredQuestions: computed(() => state[key]?.answeredQuestions ?? []),
       error: computed(() => state[key]?.error ?? null),
       port: computed(() => state[key]?.port ?? null),
       sessionId: computed(() => state[key]?.sessionId ?? null),
@@ -511,6 +574,48 @@ export function useHiveStore() {
     }
   }
 
+  function replyPermission(key: string, requestId: string, reply: "once" | "always" | "reject") {
+    wsSend(key, {
+      type: "reply_permission",
+      data: { requestId, reply },
+    });
+    const s = state[key];
+    if (s) {
+      s.pendingPermissions = s.pendingPermissions.filter((p) => p.id !== requestId);
+    }
+  }
+
+  function replyQuestion(key: string, requestId: string, answers: string[][]) {
+    wsSend(key, {
+      type: "reply_question",
+      data: { requestId, answers },
+    });
+    const s = state[key];
+    if (s) {
+      const question = s.pendingOcQuestions.find((q) => q.id === requestId);
+      if (question) {
+        s.answeredQuestions.push({
+          id: question.id,
+          questions: question.questions.map((q) => ({ question: q.question, header: q.header })),
+          answers,
+          toolCallID: question.tool?.callID,
+        });
+      }
+      s.pendingOcQuestions = s.pendingOcQuestions.filter((q) => q.id !== requestId);
+    }
+  }
+
+  function rejectQuestion(key: string, requestId: string) {
+    wsSend(key, {
+      type: "reject_question",
+      data: { requestId },
+    });
+    const s = state[key];
+    if (s) {
+      s.pendingOcQuestions = s.pendingOcQuestions.filter((q) => q.id !== requestId);
+    }
+  }
+
   return {
     activate,
     activateWorktree,
@@ -520,5 +625,8 @@ export function useHiveStore() {
     sendPrompt,
     abort,
     resolveSignal,
+    replyPermission,
+    replyQuestion,
+    rejectQuestion,
   };
 }

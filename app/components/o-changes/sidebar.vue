@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import {
   ArrowPathIcon,
+  ArrowUpTrayIcon,
   ChatBubbleLeftIcon,
   CheckCircleIcon,
   CheckIcon,
   PlusIcon,
   DocumentIcon,
-  ChevronDoubleDownIcon,
 } from "@heroicons/vue/16/solid";
 
 type ChangedFile = {
   path: string;
   status: string;
+  staged?: boolean;
+  modifiedAfterStaged?: boolean;
 };
 
 type ChangeComment = {
@@ -30,14 +32,20 @@ type Props = {
   defaultCommitMessage: string;
   committing: boolean;
   commitError: string | null;
+  ahead: number;
+  behind: number;
+  branch: string | null;
+  pushing: boolean;
+  pushError: string | null;
 };
 
 type Emits = {
-  "select-file": [path: string];
+  "select-file": [path: string, mode?: "combined" | "staged" | "unstaged"];
   "toggle-viewed": [path: string];
   "stage-all": [];
   "request-changes": [];
   "commit": [message: string];
+  push: [];
   refresh: [];
 };
 
@@ -51,6 +59,11 @@ const {
   defaultCommitMessage = "",
   committing = false,
   commitError = null,
+  ahead = 0,
+  behind = 0,
+  branch = null,
+  pushing = false,
+  pushError = null,
 } = defineProps<Props>();
 
 const emit = defineEmits<Emits>();
@@ -93,7 +106,7 @@ watch(() => files.length, (len, prevLen) => {
 });
 
 const unstagedFiles = computed(() =>
-  files.filter((f) => !viewedFiles.has(f.path)),
+  files.filter((f) => !viewedFiles.has(f.path) || f.modifiedAfterStaged),
 );
 
 const stagedFiles = computed(() =>
@@ -196,7 +209,7 @@ const statusColors: Record<string, string> = {
                 <button
                   type="button"
                   class="text-copy-sm text-primary min-w-0 flex-1 truncate text-left outline-none"
-                  @click="emit('select-file', file.path)"
+                  @click="emit('select-file', file.path, file.modifiedAfterStaged ? 'unstaged' : 'combined')"
                 >
                   {{ file.path.split("/").pop() }}
                 </button>
@@ -242,7 +255,7 @@ const statusColors: Record<string, string> = {
                 <button
                   type="button"
                   class="text-copy-sm text-tertiary min-w-0 flex-1 truncate text-left outline-none"
-                  @click="emit('select-file', file.path)"
+                  @click="emit('select-file', file.path, 'staged')"
                 >
                   {{ file.path.split("/").pop() }}
                 </button>
@@ -264,9 +277,8 @@ const statusColors: Record<string, string> = {
       </template>
     </div>
 
-    <!-- Review actions -->
-    <div v-if="files.length" class="border-edge flex flex-col gap-1.5 border-t p-2">
-      <!-- Comment count + request changes -->
+    <!-- Actions -->
+    <div v-if="files.length || ahead" class="border-edge flex flex-col gap-1.5 border-t p-2">
       <div v-if="commentCount && !showCommitForm" class="text-copy-xs text-tertiary flex items-center gap-1 px-0.5">
         <ChatBubbleLeftIcon class="size-3" />
         {{ commentCount }} comment{{ commentCount !== 1 ? "s" : "" }} pending
@@ -281,21 +293,17 @@ const statusColors: Record<string, string> = {
         Request Changes
       </OButton>
 
-      <!-- Approve & Commit button (shows commit form on click) -->
       <OButton
-        v-if="!showCommitForm"
+        v-if="stagedFiles.length && !showCommitForm"
         variant="transparent"
         size="md"
         class="w-full"
         :icon-left="CheckCircleIcon"
-        :disabled="!allViewed"
-        :title="allViewed ? 'Approve & commit changes' : 'Review all files first'"
         @click="openCommitForm"
       >
-        Approve & Commit
+        Commit
       </OButton>
 
-      <!-- Inline commit form -->
       <div v-if="showCommitForm" class="flex flex-col gap-1.5">
         <textarea
           v-model="commitMessageInput"
@@ -331,6 +339,22 @@ const statusColors: Record<string, string> = {
           </OButton>
         </div>
       </div>
+
+      <OButton
+        v-if="ahead > 0 && !showCommitForm"
+        variant="transparent"
+        size="md"
+        class="w-full"
+        :icon-left="ArrowUpTrayIcon"
+        :loading="pushing"
+        @click="emit('push')"
+      >
+        Push
+        <span class="text-tertiary ml-0.5">({{ ahead }})</span>
+      </OButton>
+      <p v-if="pushError" class="text-copy-xs text-danger px-0.5">
+        {{ pushError }}
+      </p>
     </div>
   </div>
 </template>

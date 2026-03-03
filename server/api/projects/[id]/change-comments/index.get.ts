@@ -1,11 +1,7 @@
 import { db } from "../../../../database";
 import { changeComments } from "../../../../database/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 
-/**
- * List change comments for a project.
- * Query params: ?resolved=false to filter only unresolved.
- */
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
   if (!id) {
@@ -14,8 +10,15 @@ export default defineEventHandler(async (event) => {
 
   const query = getQuery(event);
   const resolvedFilter = query.resolved;
+  const worktreePath = query.worktreePath as string | undefined;
 
   const conditions = [eq(changeComments.projectId, id)];
+
+  if (worktreePath) {
+    conditions.push(eq(changeComments.worktreePath, worktreePath));
+  } else {
+    conditions.push(isNull(changeComments.worktreePath));
+  }
 
   if (resolvedFilter === "false") {
     conditions.push(eq(changeComments.resolved, false));
@@ -23,11 +26,9 @@ export default defineEventHandler(async (event) => {
     conditions.push(eq(changeComments.resolved, true));
   }
 
-  const comments = await db
+  return db
     .select()
     .from(changeComments)
     .where(and(...conditions))
     .orderBy(changeComments.createdAt);
-
-  return comments;
 });

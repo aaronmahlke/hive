@@ -1,25 +1,6 @@
-<script lang="ts">
-import type { SupportedLanguages } from "@pierre/diffs";
-
-const extToLang: Record<string, string> = {
-  ts: "typescript", tsx: "tsx", js: "javascript", jsx: "jsx",
-  vue: "vue", svelte: "svelte", html: "html", css: "css", scss: "scss",
-  json: "json", yaml: "yaml", yml: "yaml", toml: "toml",
-  md: "markdown", mdx: "mdx", py: "python", rs: "rust", go: "go",
-  rb: "ruby", java: "java", c: "c", cpp: "cpp", h: "c", hpp: "cpp",
-  sql: "sql", graphql: "graphql", sh: "bash", bash: "bash", zsh: "bash",
-  dockerfile: "dockerfile", xml: "xml", svg: "xml",
-};
-
-function getLangFromPath(filePath: string): SupportedLanguages {
-  const ext = filePath.split(".").pop()?.toLowerCase() || "";
-  const name = filePath.split("/").pop()?.toLowerCase() || "";
-  if (name === "dockerfile") return "dockerfile";
-  return (extToLang[ext] as SupportedLanguages) || "text";
-}
-</script>
-
 <script setup lang="ts">
+import type { SupportedLanguages } from "@pierre/diffs";
+import { getLangFromPath } from "~/utils/diff-highlight";
 type Props = {
   content: string;
   filePath: string;

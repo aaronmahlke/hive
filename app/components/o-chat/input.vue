@@ -27,7 +27,7 @@ const {
 
 const emit = defineEmits<Emits>();
 
-const message = ref("");
+const message = defineModel<string>("draft", { default: "" });
 const inputRef = ref<HTMLTextAreaElement>();
 
 function handleSend() {

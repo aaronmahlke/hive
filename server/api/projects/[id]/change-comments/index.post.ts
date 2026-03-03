@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
     side?: "additions" | "deletions";
     content: string;
     sessionId?: string;
+    worktreePath?: string;
   }>(event);
 
   if (!body.filePath || !body.content || body.startLine == null || body.endLine == null) {
@@ -32,6 +33,7 @@ export default defineEventHandler(async (event) => {
     .values({
       id: nanoid(),
       projectId: id,
+      worktreePath: body.worktreePath || null,
       sessionId: body.sessionId || null,
       filePath: body.filePath,
       startLine: body.startLine,

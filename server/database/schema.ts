@@ -113,6 +113,7 @@ export const changeComments = sqliteTable("change_comments", {
   projectId: text("project_id")
     .notNull()
     .references(() => projects.id),
+  worktreePath: text("worktree_path"),
   sessionId: text("session_id"),
   filePath: text("file_path").notNull(),
   startLine: integer("start_line").notNull(),

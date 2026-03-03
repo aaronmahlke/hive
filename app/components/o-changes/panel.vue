@@ -9,20 +9,26 @@ const {
   commitMessage,
   committing,
   commitError,
+  ahead,
+  behind,
+  branch,
+  pushing,
+  pushError,
   selectFile,
   toggleViewed,
   requestChanges,
   commit,
+  push,
   fetchChanges,
   init,
 } = useChanges();
 
-function stageAll() {
-  const newSet = new Set(viewedFiles.value);
+async function stageAll() {
   for (const f of files.value) {
-    newSet.add(f.path);
+    if (!viewedFiles.value.has(f.path)) {
+      toggleViewed(f.path);
+    }
   }
-  viewedFiles.value = newSet;
 }
 
 // Initialize on mount
@@ -72,11 +78,17 @@ onKeyStroke("Escape", () => {
     :default-commit-message="commitMessage"
     :committing="committing"
     :commit-error="commitError"
-    @select-file="selectFile"
+    :ahead="ahead"
+    :behind="behind"
+    :branch="branch"
+    :pushing="pushing"
+    :push-error="pushError"
+    @select-file="(path: string, mode?: 'combined' | 'staged' | 'unstaged') => selectFile(path, mode)"
     @toggle-viewed="toggleViewed"
     @stage-all="stageAll"
     @request-changes="requestChanges"
     @commit="commit($event)"
+    @push="push"
     @refresh="fetchChanges"
   />
 </template>

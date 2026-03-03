@@ -4,7 +4,7 @@ import { PlusIcon, XMarkIcon, RectangleStackIcon } from "@heroicons/vue/16/solid
 const route = useRoute();
 const router = useRouter();
 
-const openTabs = useState<string[]>("openTabs", () => []);
+const openTabs = useLocalStorage<string[]>("hive:openTabs", []);
 
 const { data: allProjects, refresh: refreshProjects } = useFetch("/api/projects");
 

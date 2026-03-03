@@ -9,6 +9,7 @@ type Props = {
   loadingContent: boolean;
   comments: any[];
   viewed: boolean;
+  diffMode?: "combined" | "staged" | "unstaged";
 };
 
 type Emits = {
@@ -28,16 +29,46 @@ type Emits = {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const hasDiff = computed(() => !!props.fileDiff);
 const hasContent = computed(() => props.fileContent !== null);
 
+const effectiveDiff = computed(() => {
+  if (props.fileDiff) return props.fileDiff;
+  if (!props.fileContent) return null;
+
+  const lines = props.fileContent.split("\n").map((l) => l + "\n");
+  return {
+    from: props.filePath,
+    to: props.filePath,
+    hunks: [
+      {
+        additionStart: 1,
+        additionCount: lines.length,
+        deletionStart: 0,
+        deletionCount: 0,
+        additionLines: lines.length,
+        deletionLines: 0,
+        collapsedBefore: 0,
+        hunkContent: [
+          {
+            type: "change",
+            additions: lines,
+            deletions: [],
+          },
+        ],
+      },
+    ],
+  };
+});
+
+const hasDiff = computed(() => !!effectiveDiff.value);
+
 const totalAdditions = computed(() => {
-  if (!props.fileDiff?.hunks) return 0;
-  return props.fileDiff.hunks.reduce((n: number, h: any) => n + (h.additionLines ?? 0), 0);
+  if (!effectiveDiff.value?.hunks) return 0;
+  return effectiveDiff.value.hunks.reduce((n: number, h: any) => n + (h.additionLines ?? 0), 0);
 });
 const totalDeletions = computed(() => {
-  if (!props.fileDiff?.hunks) return 0;
-  return props.fileDiff.hunks.reduce((n: number, h: any) => n + (h.deletionLines ?? 0), 0);
+  if (!effectiveDiff.value?.hunks) return 0;
+  return effectiveDiff.value.hunks.reduce((n: number, h: any) => n + (h.deletionLines ?? 0), 0);
 });
 </script>
 
@@ -50,10 +81,10 @@ const totalDeletions = computed(() => {
           {{ props.filePath }}
         </span>
         <span
-          v-if="!hasDiff && hasContent"
+          v-if="props.diffMode && props.diffMode !== 'combined'"
           class="text-copy-xs text-tertiary shrink-0 rounded bg-surface-1 px-1.5 py-0.5"
         >
-          new file
+          {{ props.diffMode }}
         </span>
         <span v-if="totalDeletions" class="text-copy-xs shrink-0 font-mono" style="color: var(--diff-deletion-base, #ff2e3f)">
           -{{ totalDeletions }}
@@ -94,18 +125,13 @@ const totalDeletions = computed(() => {
     <div class="flex-1 overflow-auto">
       <OChangesDiffViewer
         v-if="hasDiff"
-        :file-diff="props.fileDiff"
+        :file-diff="effectiveDiff"
         :file-path="props.filePath"
         :comments="props.comments"
+        :diff-mode="props.diffMode"
         @add-comment="emit('add-comment', $event)"
         @delete-comment="emit('delete-comment', $event)"
         @update-comment="(id: string, content: string) => emit('update-comment', id, content)"
-      />
-
-      <OChangesFileViewer
-        v-else-if="hasContent"
-        :content="props.fileContent!"
-        :file-path="props.filePath"
       />
 
       <div

@@ -42,10 +42,11 @@ export default defineEventHandler(async (event) => {
   if (gitRef) {
     try {
       const git = simpleGit(basePath);
-      const content = await git.show([`${gitRef}:${filePath}`]);
+      // :0 refers to the staged version (git index)
+      const refSpec = gitRef === ":0" ? `:0:${filePath}` : `${gitRef}:${filePath}`;
+      const content = await git.show([refSpec]);
       return { content, path: filePath, ref: gitRef };
     } catch {
-      // File might not exist at that ref (new file) — return empty
       return { content: "", path: filePath, ref: gitRef };
     }
   }

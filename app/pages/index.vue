@@ -2,7 +2,7 @@
 import { FolderOpenIcon, PlusIcon, FolderIcon } from "@heroicons/vue/16/solid";
 
 const router = useRouter();
-const openTabs = useState<string[]>("openTabs", () => []);
+const openTabs = useLocalStorage<string[]>("hive:openTabs", []);
 
 const { data: projects } = await useFetch("/api/projects");
 

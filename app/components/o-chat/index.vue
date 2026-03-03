@@ -9,9 +9,11 @@ type Props = {
 const { projectId, placeholder } = defineProps<Props>();
 
 const store = useHiveStore();
-const { turns, messages, isWorking, pendingQuestions, modelName, connected, initializing } = store.project(projectId);
+const { turns, messages, isWorking, pendingQuestions, pendingPermissions, pendingOcQuestions, answeredQuestions, modelName, connected, initializing } = store.project(projectId);
 
-const mode = ref<Mode>("build");
+const storageKey = computed(() => `hive:chat:${projectId}`);
+const mode = useLocalStorage<Mode>(`${storageKey.value}:mode`, "build");
+const draft = useLocalStorage(`${storageKey.value}:draft`, "");
 const scrollArea = ref<HTMLDivElement>();
 const messageQueue = ref<string[]>([]);
 
@@ -24,6 +26,7 @@ watch(isWorking, (working, wasWorking) => {
 });
 
 function handleSend(text: string) {
+  draft.value = "";
   if (isWorking.value) {
     messageQueue.value.push(text);
   } else {
@@ -43,6 +46,18 @@ function handleAbort() {
 
 function handleResolveQuestion(signalId: string, answer: string) {
   store.resolveSignal(projectId, signalId, answer);
+}
+
+function handleReplyPermission(requestId: string, reply: "once" | "always" | "reject") {
+  store.replyPermission(projectId, requestId, reply);
+}
+
+function handleReplyOcQuestion(requestId: string, answers: string[][]) {
+  store.replyQuestion(projectId, requestId, answers);
+}
+
+function handleRejectOcQuestion(requestId: string) {
+  store.rejectQuestion(projectId, requestId);
 }
 
 // ── Scroll management via MutationObserver + ResizeObserver ──
@@ -77,9 +92,20 @@ onMounted(() => {
   }
 });
 
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape" && pendingOcQuestions.value.length) {
+    handleRejectOcQuestion(pendingOcQuestions.value[0].id);
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("keydown", onKeydown);
+});
+
 onUnmounted(() => {
   mutationObs?.disconnect();
   resizeObs?.disconnect();
+  document.removeEventListener("keydown", onKeydown);
 });
 
 // Force scroll on initial load
@@ -114,6 +140,7 @@ watch(initializing, (val, old) => {
           :user-message="turn.userMessage"
           :assistant-messages="turn.assistantMessages"
           :is-working="isWorking && i === turns.length - 1"
+          :answered-questions="answeredQuestions"
           @abort="handleAbort"
         />
       </div>
@@ -122,6 +149,21 @@ watch(initializing, (val, old) => {
     <div class="shrink-0">
       <div class="mx-auto max-w-3xl px-4 pb-3">
         <div class="bg-base-2 rounded-[14px] p-0.5">
+          <OChatPermission
+            v-for="p in pendingPermissions"
+            :key="p.id"
+            :permission="p"
+            @reply="handleReplyPermission"
+          />
+
+          <OChatOcQuestion
+            v-for="q in pendingOcQuestions"
+            :key="q.id"
+            :request="q"
+            @reply="handleReplyOcQuestion"
+            @reject="handleRejectOcQuestion"
+          />
+
           <OChatQuestion
             v-for="q in pendingQuestions"
             :key="q.id"
@@ -130,7 +172,7 @@ watch(initializing, (val, old) => {
           />
 
           <div
-            v-if="pendingQuestions.length && messageQueue.length"
+            v-if="(pendingPermissions.length || pendingOcQuestions.length || pendingQuestions.length) && messageQueue.length"
             class="border-edge mx-3 border-t"
           />
 
@@ -141,6 +183,7 @@ watch(initializing, (val, old) => {
 
           <div class="bg-base-3 border-edge rounded-xl border">
             <OChatInput
+              v-model:draft="draft"
               :disabled="!connected"
               :placeholder="placeholder || 'Send a message...'"
               :is-working

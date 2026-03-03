@@ -13,10 +13,13 @@ type ChangeComment = {
   resolved: boolean;
 };
 
+type DiffMode = "combined" | "staged" | "unstaged";
+
 type Props = {
   fileDiff: FileDiffMetadata;
   filePath: string;
   comments?: ChangeComment[];
+  diffMode?: DiffMode;
 };
 
 type Emits = {
@@ -35,6 +38,7 @@ const {
   fileDiff,
   filePath,
   comments = [],
+  diffMode = "combined",
 } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
@@ -60,9 +64,19 @@ async function fetchFullFiles() {
   }
 
   try {
+    // Determine which refs to fetch based on diff mode:
+    // combined: old = HEAD, new = working tree
+    // staged:   old = HEAD, new = :0 (index/staged)
+    // unstaged: old = :0 (index/staged), new = working tree
+    const oldRef = diffMode === "unstaged" ? ":0" : "HEAD";
+    const newRef = diffMode === "staged" ? ":0" : undefined;
+
+    const newQuery = newRef ? { ...query, ref: newRef } : query;
+    const oldQuery = { ...query, ref: oldRef };
+
     const [newRes, oldRes] = await Promise.all([
-      $fetch(`/api/projects/${projectId}/file-content`, { query }),
-      $fetch(`/api/projects/${projectId}/file-content`, { query: { ...query, ref: "HEAD" } }),
+      $fetch(`/api/projects/${projectId}/file-content`, { query: newQuery }),
+      $fetch(`/api/projects/${projectId}/file-content`, { query: oldQuery }),
     ]);
     newFileLines.value = ((newRes as any).content || "").split("\n");
     oldFileLines.value = ((oldRes as any).content || "").split("\n");

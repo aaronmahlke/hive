@@ -31,10 +31,18 @@ type Message = {
   parts: Part[];
 };
 
+type AnsweredQuestion = {
+  id: string;
+  questions: { question: string; header: string }[];
+  answers: string[][];
+  toolCallID?: string;
+};
+
 type Props = {
   userMessage: Message;
   assistantMessages: Message[];
   isWorking?: boolean;
+  answeredQuestions?: AnsweredQuestion[];
 };
 
 type Emits = {
@@ -45,7 +53,7 @@ type RenderBlock =
   | { kind: "text"; text: string; id: string }
   | { kind: "tools"; tools: Part[]; id: string };
 
-const { userMessage, assistantMessages, isWorking = false } = defineProps<Props>();
+const { userMessage, assistantMessages, isWorking = false, answeredQuestions = [] } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const userText = computed(() => {
@@ -147,6 +155,12 @@ async function copyResponse() {
   copied.value = true;
   setTimeout(() => { copied.value = false; }, 2000);
 }
+
+function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
+  if (!answeredQuestions.length) return [];
+  const callIDs = new Set(tools.map((t) => t.callID).filter(Boolean));
+  return answeredQuestions.filter((aq) => aq.toolCallID && callIDs.has(aq.toolCallID));
+}
 </script>
 
 <template>
@@ -193,15 +207,21 @@ async function copyResponse() {
       </div>
 
       <!-- Tool call group (collapsible) -->
-      <OChatToolGroup
-        v-else-if="block.kind === 'tools'"
-        :tools="block.tools"
-        :is-last="blockIdx === blocks.length - 1"
-        :is-working="isWorking"
-        :status-text="statusText"
-        :formatted-duration="formattedDuration"
-        @abort="emit('abort')"
-      />
+      <template v-else-if="block.kind === 'tools'">
+        <OChatToolGroup
+          :tools="block.tools"
+          :is-last="blockIdx === blocks.length - 1"
+          :is-working="isWorking"
+          :status-text="statusText"
+          :formatted-duration="formattedDuration"
+          @abort="emit('abort')"
+        />
+        <OChatAnsweredQuestion
+          v-for="aq in answersForToolGroup(block.tools)"
+          :key="aq.id"
+          :data="aq"
+        />
+      </template>
     </template>
 
     <!-- Working indicator when actively streaming after existing blocks -->

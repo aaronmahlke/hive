@@ -107,6 +107,22 @@ export default defineWebSocketHandler({
           const eventSessionId = event.properties?.sessionID;
           if (eventSessionId && eventSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "status", data: { type: "idle" } }));
+        } else if (eventType === "permission.asked") {
+          const eventSessionId = event.properties?.sessionID;
+          if (eventSessionId && eventSessionId !== sessionId) return;
+          peer.send(JSON.stringify({ type: "permission:asked", data: event.properties }));
+        } else if (eventType === "permission.replied") {
+          const eventSessionId = event.properties?.sessionID;
+          if (eventSessionId && eventSessionId !== sessionId) return;
+          peer.send(JSON.stringify({ type: "permission:replied", data: event.properties }));
+        } else if (eventType === "question.asked") {
+          const eventSessionId = event.properties?.sessionID;
+          if (eventSessionId && eventSessionId !== sessionId) return;
+          peer.send(JSON.stringify({ type: "question:asked", data: event.properties }));
+        } else if (eventType === "question.replied" || eventType === "question.rejected") {
+          const eventSessionId = event.properties?.sessionID;
+          if (eventSessionId && eventSessionId !== sessionId) return;
+          peer.send(JSON.stringify({ type: "question:resolved", data: event.properties }));
         } else if (eventType === "signal") {
           peer.send(JSON.stringify({ type: "signal", data: event.properties }));
         } else if (eventType === "signal.resolved") {
@@ -129,6 +145,8 @@ export default defineWebSocketHandler({
       fetchAndSendStatus(peer, port, sessionId),
       fetchAndSendMessages(peer, port, sessionId),
       fetchAndSendSignals(peer),
+      fetchAndSendPermissions(peer, port),
+      fetchAndSendQuestions(peer, port),
     ]).then(() => {
       console.log(`[ws:open] Initial data fetched: ${Date.now() - t1}ms (total: ${Date.now() - t0}ms)`);
     }).catch(() => {});
@@ -214,6 +232,63 @@ export default defineWebSocketHandler({
         break;
       }
 
+      case "reply_permission": {
+        const { requestId, reply } = msg.data || {};
+        if (!requestId || !reply) return;
+
+        try {
+          await fetch(
+            `http://localhost:${info.port}/permission/${requestId}/reply`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ reply }),
+            },
+          );
+        } catch (e: any) {
+          peer.send(JSON.stringify({
+            type: "error",
+            data: { message: `Failed to reply to permission: ${e.message}` },
+          }));
+        }
+        break;
+      }
+
+      case "reply_question": {
+        const { requestId, answers } = msg.data || {};
+        if (!requestId || !answers) return;
+
+        try {
+          await fetch(
+            `http://localhost:${info.port}/question/${requestId}/reply`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ answers }),
+            },
+          );
+        } catch (e: any) {
+          peer.send(JSON.stringify({
+            type: "error",
+            data: { message: `Failed to reply to question: ${e.message}` },
+          }));
+        }
+        break;
+      }
+
+      case "reject_question": {
+        const { requestId } = msg.data || {};
+        if (!requestId) return;
+
+        try {
+          await fetch(
+            `http://localhost:${info.port}/question/${requestId}/reject`,
+            { method: "POST" },
+          );
+        } catch {}
+        break;
+      }
+
       case "ping":
         break;
     }
@@ -264,7 +339,32 @@ async function fetchAndSendSignals(peer: Peer) {
     for (const q of pending.filter((s) => s.type === "question")) {
       peer.send(JSON.stringify({ type: "signal", data: q }));
     }
-  } catch {
-    // ignore
+  } catch {}
+}
+
+async function fetchAndSendPermissions(peer: Peer, port: number) {
+  try {
+    const res = await fetch(`http://localhost:${port}/permission`);
+    const permissions = await res.json();
+    if (Array.isArray(permissions)) {
+      for (const p of permissions) {
+        peer.send(JSON.stringify({ type: "permission:asked", data: p }));
+      }
+    }
+  } catch {}
+}
+
+async function fetchAndSendQuestions(peer: Peer, port: number) {
+  try {
+    const res = await fetch(`http://localhost:${port}/question`);
+    const questions = await res.json();
+    console.log(`[ws:open] Fetched ${Array.isArray(questions) ? questions.length : 0} pending questions from port ${port}`);
+    if (Array.isArray(questions)) {
+      for (const q of questions) {
+        peer.send(JSON.stringify({ type: "question:asked", data: q }));
+      }
+    }
+  } catch (e: any) {
+    console.warn(`[ws:open] Failed to fetch questions from port ${port}:`, e.message);
   }
 }

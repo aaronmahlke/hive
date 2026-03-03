@@ -4,11 +4,14 @@ import type { FileDiffMetadata } from "@pierre/diffs";
 type ChangedFile = {
   path: string;
   status: string;
+  staged: boolean;
+  modifiedAfterStaged?: boolean;
 };
 
 type ChangeComment = {
   id: string;
   projectId: string;
+  worktreePath: string | null;
   sessionId: string | null;
   filePath: string;
   startLine: number;
@@ -19,41 +22,60 @@ type ChangeComment = {
   createdAt: string;
 };
 
+type DiffMode = "combined" | "staged" | "unstaged";
+
 const files = ref<ChangedFile[]>([]);
 const rawDiff = ref("");
+const rawStagedDiff = ref("");
+const rawUnstagedDiff = ref("");
 const loading = ref(false);
+const ahead = ref(0);
+const behind = ref(0);
+const branch = ref<string | null>(null);
 const comments = ref<ChangeComment[]>([]);
 const viewedFiles = ref(new Set<string>());
 const selectedFile = ref<string | null>(null);
+const selectedDiffMode = ref<DiffMode>("combined");
 const selectedFileContent = ref<string | null>(null);
 const loadingFileContent = ref(false);
 const commentInputActive = ref(false);
 let activeProjectId: string | null = null;
+
+function parseDiff(raw: string): Map<string, FileDiffMetadata> {
+  if (!raw) return new Map();
+  try {
+    const parsed = parsePatchFiles(raw);
+    const map = new Map<string, FileDiffMetadata>();
+    for (const patch of parsed) {
+      for (const file of patch.files) {
+        map.set(file.name, file);
+      }
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
 
 export function useChanges() {
   const route = useRoute();
   const projectId = computed(() => (route.params.id as string) || null);
   const { activeWorktreePath } = useActiveWorktree(projectId);
 
-  const parsedFiles = computed(() => {
-    if (!rawDiff.value) return new Map<string, FileDiffMetadata>();
-    try {
-      const parsed = parsePatchFiles(rawDiff.value);
-      const map = new Map<string, FileDiffMetadata>();
-      for (const patch of parsed) {
-        for (const file of patch.files) {
-          map.set(file.name, file);
-        }
-      }
-      return map;
-    } catch {
-      return new Map<string, FileDiffMetadata>();
-    }
-  });
+  const parsedCombined = computed(() => parseDiff(rawDiff.value));
+  const parsedStaged = computed(() => parseDiff(rawStagedDiff.value));
+  const parsedUnstaged = computed(() => parseDiff(rawUnstagedDiff.value));
+
+  // Legacy alias
+  const parsedFiles = parsedCombined;
 
   const selectedFileDiff = computed(() => {
     if (!selectedFile.value) return null;
-    return parsedFiles.value.get(selectedFile.value) || null;
+    const map =
+      selectedDiffMode.value === "staged" ? parsedStaged.value
+      : selectedDiffMode.value === "unstaged" ? parsedUnstaged.value
+      : parsedCombined.value;
+    return map.get(selectedFile.value) || null;
   });
 
   const unresolvedComments = computed(() =>
@@ -64,18 +86,28 @@ export function useChanges() {
     comments.value.filter((c) => c.filePath === selectedFile.value),
   );
 
+  const worktreeQuery = computed(() => {
+    const q: Record<string, string> = {};
+    if (activeWorktreePath.value) q.worktreePath = activeWorktreePath.value;
+    return q;
+  });
+
   async function fetchChanges() {
     const id = projectId.value;
     if (!id) return;
     loading.value = true;
     try {
-      const query: Record<string, string> = {};
-      if (activeWorktreePath.value) {
-        query.worktreePath = activeWorktreePath.value;
-      }
-      const data = await $fetch(`/api/projects/${id}/changes`, { query });
+      const data = await $fetch(`/api/projects/${id}/changes`, { query: worktreeQuery.value });
       files.value = (data as any).files || [];
       rawDiff.value = (data as any).diff || "";
+      rawStagedDiff.value = (data as any).stagedDiff || "";
+      rawUnstagedDiff.value = (data as any).unstagedDiff || "";
+      ahead.value = (data as any).ahead ?? 0;
+      behind.value = (data as any).behind ?? 0;
+      branch.value = (data as any).branch ?? null;
+      viewedFiles.value = new Set(
+        files.value.filter((f) => f.staged).map((f) => f.path),
+      );
     } catch (e) {
       console.error("[changes] Failed to fetch:", e);
     } finally {
@@ -87,7 +119,9 @@ export function useChanges() {
     const id = projectId.value;
     if (!id) return;
     try {
-      const data = await $fetch(`/api/projects/${id}/change-comments`);
+      const data = await $fetch(`/api/projects/${id}/change-comments`, {
+        query: worktreeQuery.value,
+      });
       comments.value = data as ChangeComment[];
     } catch (e) {
       console.error("[changes] Failed to fetch comments:", e);
@@ -110,6 +144,7 @@ export function useChanges() {
       {
         id: optimisticId,
         projectId: id,
+        worktreePath: activeWorktreePath.value,
         sessionId: null,
         filePath: comment.filePath,
         startLine: comment.startLine,
@@ -124,7 +159,10 @@ export function useChanges() {
     try {
       await $fetch(`/api/projects/${id}/change-comments`, {
         method: "POST",
-        body: comment,
+        body: {
+          ...comment,
+          ...(activeWorktreePath.value && { worktreePath: activeWorktreePath.value }),
+        },
       });
       await fetchComments();
     } catch (e) {
@@ -170,12 +208,40 @@ export function useChanges() {
     }
   }
 
+  async function stageFile(path: string) {
+    const id = projectId.value;
+    if (!id) return;
+    try {
+      await $fetch(`/api/projects/${id}/stage`, {
+        method: "POST",
+        body: { path, ...worktreeQuery.value },
+      });
+    } catch (e) {
+      console.error("[changes] Failed to stage:", e);
+    }
+  }
+
+  async function unstageFile(path: string) {
+    const id = projectId.value;
+    if (!id) return;
+    try {
+      await $fetch(`/api/projects/${id}/stage`, {
+        method: "POST",
+        body: { path, unstage: true, ...worktreeQuery.value },
+      });
+    } catch (e) {
+      console.error("[changes] Failed to unstage:", e);
+    }
+  }
+
   function toggleViewed(path: string) {
     const newSet = new Set(viewedFiles.value);
     if (newSet.has(path)) {
       newSet.delete(path);
+      unstageFile(path);
     } else {
       newSet.add(path);
+      stageFile(path);
     }
     viewedFiles.value = newSet;
   }
@@ -186,11 +252,13 @@ export function useChanges() {
     if (wasViewed) {
       newSet.delete(path);
       viewedFiles.value = newSet;
+      unstageFile(path);
       return;
     }
 
     newSet.add(path);
     viewedFiles.value = newSet;
+    stageFile(path);
 
     const currentIndex = files.value.findIndex((f) => f.path === path);
     for (let i = 1; i <= files.value.length; i++) {
@@ -210,10 +278,7 @@ export function useChanges() {
     if (!id) return;
     loadingFileContent.value = true;
     try {
-      const query: Record<string, string> = { path: filePath };
-      if (activeWorktreePath.value) {
-        query.worktreePath = activeWorktreePath.value;
-      }
+      const query: Record<string, string> = { path: filePath, ...worktreeQuery.value };
       const data = await $fetch(`/api/projects/${id}/file-content`, { query });
       selectedFileContent.value = (data as any).content || "";
     } catch (e) {
@@ -224,8 +289,8 @@ export function useChanges() {
     }
   }
 
-  function selectFile(path: string) {
-    if (selectedFile.value === path) {
+  function selectFile(path: string, mode?: DiffMode) {
+    if (selectedFile.value === path && selectedDiffMode.value === (mode || "combined")) {
       selectedFile.value = null;
       selectedFileContent.value = null;
       return;
@@ -233,7 +298,24 @@ export function useChanges() {
     selectedFile.value = path;
     selectedFileContent.value = null;
 
-    if (!parsedFiles.value.has(path)) {
+    if (mode) {
+      selectedDiffMode.value = mode;
+    } else {
+      // Auto-detect: if file only has staged changes, show staged; if only unstaged, show combined
+      const file = files.value.find((f) => f.path === path);
+      if (file?.modifiedAfterStaged) {
+        selectedDiffMode.value = "combined";
+      } else {
+        selectedDiffMode.value = "combined";
+      }
+    }
+
+    const map =
+      selectedDiffMode.value === "staged" ? parsedStaged.value
+      : selectedDiffMode.value === "unstaged" ? parsedUnstaged.value
+      : parsedCombined.value;
+
+    if (!map.has(path)) {
       fetchFileContent(path);
     }
   }
@@ -274,7 +356,10 @@ export function useChanges() {
       "---\nAfter making changes, let me know when you're ready for another review.",
     );
 
-    store.sendPrompt(id, lines.join("\n"));
+    const connectionKey = activeWorktreePath.value
+      ? `wt:${activeWorktreePath.value}`
+      : id;
+    store.sendPrompt(connectionKey, lines.join("\n"));
 
     const ids = unresolvedComments.value.map((c) => c.id);
     try {
@@ -291,11 +376,12 @@ export function useChanges() {
   }
 
   const commitMessage = computed(() => {
-    const modified = files.value.filter((f) => f.status === "M").map((f) => f.path.split("/").pop());
-    const added = files.value.filter((f) => f.status === "A" || f.status === "?").map((f) => f.path.split("/").pop());
-    const deleted = files.value.filter((f) => f.status === "D").map((f) => f.path.split("/").pop());
+    const staged = files.value.filter((f) => f.staged);
+    const modified = staged.filter((f) => f.status === "M").map((f) => f.path.split("/").pop());
+    const added = staged.filter((f) => f.status === "A" || f.status === "?").map((f) => f.path.split("/").pop());
+    const deleted = staged.filter((f) => f.status === "D").map((f) => f.path.split("/").pop());
 
-    const total = files.value.length;
+    const total = staged.length;
     if (total === 0) return "";
 
     const lines = [`Update ${total} file${total !== 1 ? "s" : ""}`];
@@ -340,6 +426,31 @@ export function useChanges() {
     }
   }
 
+  const pushing = ref(false);
+  const pushError = ref<string | null>(null);
+
+  async function push() {
+    const id = projectId.value;
+    if (!id) return false;
+
+    pushing.value = true;
+    pushError.value = null;
+
+    try {
+      await $fetch(`/api/projects/${id}/push`, {
+        method: "POST",
+        body: worktreeQuery.value,
+      });
+      await fetchChanges();
+      return true;
+    } catch (e: any) {
+      pushError.value = e.data?.message || e.message || "Push failed";
+      return false;
+    } finally {
+      pushing.value = false;
+    }
+  }
+
   let activeWorktreeKey: string | null = null;
 
   function init() {
@@ -351,6 +462,8 @@ export function useChanges() {
       activeWorktreeKey = wtKey;
       files.value = [];
       rawDiff.value = "";
+      rawStagedDiff.value = "";
+      rawUnstagedDiff.value = "";
       comments.value = [];
       viewedFiles.value = new Set();
       selectedFile.value = null;
@@ -366,6 +479,7 @@ export function useChanges() {
     comments,
     viewedFiles,
     selectedFile,
+    selectedDiffMode,
     selectedFileContent,
     loadingFileContent,
     commentInputActive,
@@ -376,6 +490,11 @@ export function useChanges() {
     commitMessage,
     committing,
     commitError,
+    ahead,
+    behind,
+    branch,
+    pushing,
+    pushError,
 
     fetchChanges,
     fetchComments,
@@ -388,6 +507,7 @@ export function useChanges() {
     closeOverlay,
     requestChanges,
     commit,
+    push,
     init,
   };
 }
