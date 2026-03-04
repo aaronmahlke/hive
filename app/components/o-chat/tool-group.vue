@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ChevronDownIcon, StopIcon } from "@heroicons/vue/16/solid";
-
 type Part = {
   type: string;
   tool?: string;
@@ -21,37 +19,30 @@ type Emits = {
   abort: [];
 };
 
-const { tools, isLast = false, isWorking = false, statusText = "", formattedDuration = "" } = defineProps<Props>();
+const { tools, isLast = false } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const expanded = ref(false);
-const hasRunning = computed(() => tools.some((t) => t.state?.status === "running" || t.state?.status === "pending"));
-
-watch(hasRunning, (running) => {
-  if (running) expanded.value = true;
+const lastTodoIndex = computed(() => {
+  if (!isLast) return -1;
+  for (let i = tools.length - 1; i >= 0; i--) {
+    if (tools[i].tool === "todowrite") return i;
+  }
+  return -1;
 });
 </script>
 
 <template>
-  <div class="px-5 py-1">
-    <button
-      type="button"
-      class="text-copy-sm text-tertiary hover:text-secondary flex items-center gap-1.5 outline-none"
-      @click="expanded = !expanded"
-    >
-      <ChevronDownIcon
-        class="size-3.5 transition-transform"
-        :class="expanded ? '' : '-rotate-90'"
+  <div class="flex flex-col">
+    <template v-for="(tool, i) in tools" :key="tool.callID || tool.tool">
+      <OChatToolTodos
+        v-if="tool.tool === 'todowrite' && tool.state?.input?.todos"
+        :todos="tool.state.input.todos"
+        :is-latest="i === lastTodoIndex"
       />
-      <span>{{ tools.length }} step{{ tools.length === 1 ? "" : "s" }}</span>
-    </button>
-
-    <div v-if="expanded" class="mt-1 flex flex-col">
       <OChatToolCall
-        v-for="tool in tools"
-        :key="tool.callID || tool.tool"
+        v-else
         :part="tool as any"
       />
-    </div>
+    </template>
   </div>
 </template>

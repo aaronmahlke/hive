@@ -463,9 +463,6 @@ export function useHiveStore() {
     s.initializing = true;
     s.error = null;
 
-    const t0 = performance.now();
-    console.log(`[activateWorktree] Starting for ${opts.branchName}...`);
-
     try {
       const startResult = await $fetch("/api/worktrees/start", {
         method: "POST",
@@ -477,27 +474,47 @@ export function useHiveStore() {
       }) as { id: string; port: number; alreadyRunning: boolean };
 
       s.port = startResult.port;
-      console.log(`[activateWorktree] Server ready on :${startResult.port} (already=${startResult.alreadyRunning}) ${Math.round(performance.now() - t0)}ms`);
+      s.worktreeId = startResult.id;
 
+      // Use Hive DB as source of truth — POST without ?new reuses existing session
       const sessResult = await $fetch("/api/sessions", {
         method: "POST",
         body: { worktreeId: startResult.id },
       }) as { sessionId?: string; opencodeSessionId?: string };
 
       s.sessionId = sessResult.opencodeSessionId || null;
-      s.worktreeId = startResult.id;
-      console.log(`[activateWorktree] Session: ${s.sessionId} (hive: ${sessResult.sessionId}) ${Math.round(performance.now() - t0)}ms`);
 
       if (!s.sessionId) {
-        throw new Error("Failed to create OpenCode session for worktree");
+        throw new Error("Failed to get OpenCode session for worktree");
       }
 
       connectWs(key, opts.projectId, s.sessionId, startResult.id);
     } catch (e: any) {
       s.initializing = false;
       s.error = e.message || "Failed to connect to worktree";
-      console.error(`[activateWorktree] Failed for ${opts.branchName}:`, e);
     }
+  }
+
+  function switchSession(key: string, opencodeSessionId: string) {
+    const s = ensureState(key);
+
+    // Clear local state for the new session
+    const msgs = getMessages(key);
+    msgs.value = [];
+    prevTurnsMap.delete(key);
+
+    s.sessionId = opencodeSessionId;
+    s.isWorking = false;
+    s.pendingQuestions = [];
+    s.pendingPermissions = [];
+    s.pendingOcQuestions = [];
+    s.answeredQuestions = [];
+
+    // Tell the server to switch — no disconnect needed
+    wsSend(key, {
+      type: "switch_session",
+      data: { sessionId: opencodeSessionId },
+    });
   }
 
   function deactivate(key: string) {
@@ -628,5 +645,6 @@ export function useHiveStore() {
     replyPermission,
     replyQuestion,
     rejectQuestion,
+    switchSession,
   };
 }

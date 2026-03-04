@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Token } from "~/utils/diff-highlight";
+import { PlusIcon } from "@heroicons/vue/16/solid";
 
 type WordSpan = {
   text: string;
@@ -12,6 +13,7 @@ type Props = {
   tokens: Token[];
   wordSpans?: WordSpan[];
   selected?: boolean;
+  commented?: boolean;
   hovered?: boolean;
 };
 
@@ -21,6 +23,7 @@ const {
   tokens,
   wordSpans,
   selected = false,
+  commented = false,
   hovered = false,
 } = defineProps<Props>();
 
@@ -29,6 +32,7 @@ const emit = defineEmits<{
   "mouseenter-number": [lineNumber: number];
   "mouseenter-line": [lineNumber: number];
   "mouseleave-line": [];
+  "click-plus": [lineNumber: number];
 }>();
 
 const lineClass = computed(() => {
@@ -38,6 +42,7 @@ const lineClass = computed(() => {
   else if (type === "deletion") classes.push("diff-line-deletion");
   else classes.push("diff-line-context");
   if (selected) classes.push("diff-line-selected");
+  if (commented) classes.push("diff-line-commented");
   if (hovered) classes.push("diff-line-hovered");
   return classes.join(" ");
 });
@@ -56,10 +61,18 @@ const emphasisClass = computed(() => {
     @mouseleave="emit('mouseleave-line')"
   >
     <div
-      class="diff-line-number"
+      class="diff-line-number group/ln"
       @mousedown.prevent="lineNumber != null && emit('mousedown-number', lineNumber)"
       @mouseenter="lineNumber != null && emit('mouseenter-number', lineNumber)"
     >
+      <button
+        v-if="lineNumber != null"
+        type="button"
+        class="diff-plus-btn"
+        @click.stop.prevent="emit('click-plus', lineNumber)"
+      >
+        <PlusIcon class="size-4" />
+      </button>
       <span v-if="lineNumber != null">{{ lineNumber }}</span>
     </div>
     <div class="diff-line-content">
@@ -89,6 +102,8 @@ const emphasisClass = computed(() => {
   display: grid;
   grid-template-columns: subgrid;
   grid-column: 1 / 3;
+  height: var(--diff-line-height);
+  overflow: hidden;
 }
 
 .diff-line-number {
@@ -114,9 +129,10 @@ const emphasisClass = computed(() => {
 .diff-line-content {
   grid-column: 2 / 3;
   padding-inline: 1ch;
-  white-space: pre-wrap;
-  word-break: break-word;
-  min-height: var(--diff-line-height);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: var(--diff-line-height);
   line-height: var(--diff-line-height);
   font-size: var(--diff-font-size);
   font-family: var(--diff-font);
@@ -219,6 +235,46 @@ const emphasisClass = computed(() => {
 }
 
 /* ── Word-level emphasis ── */
+
+.diff-plus-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #111;
+  background-color: white;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.diff-plus-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.group\/ln:hover .diff-plus-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.diff-line-selected .diff-line-number::after,
+.diff-line-commented .diff-line-number::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background-color: var(--diff-selection-base);
+  z-index: 2;
+}
 
 .diff-word-addition {
   background-color: var(--diff-bg-addition-emphasis);

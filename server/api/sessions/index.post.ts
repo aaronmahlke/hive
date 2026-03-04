@@ -4,86 +4,82 @@ import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export default defineEventHandler(async (event) => {
+  const query = getQuery(event);
+  const forceNew = query.new === "true";
+
   const body = await readBody<{
-    worktreeId: string;
+    worktreeId?: string;
+    port?: number;
     role?: "main" | "worker" | "reviewer";
   }>(event);
 
-  if (!body.worktreeId) {
-    throw createError({
-      statusCode: 400,
-      message: "worktreeId is required",
+  let opencodePort: number | null = null;
+  let worktreeId: string | null = body.worktreeId || null;
+
+  if (worktreeId) {
+    const worktree = await db.query.worktrees.findFirst({
+      where: eq(worktrees.id, worktreeId),
     });
+    if (!worktree?.opencodePort) {
+      throw createError({ statusCode: 400, message: "Worktree not found or server not running" });
+    }
+    opencodePort = worktree.opencodePort;
+  } else if (body.port) {
+    opencodePort = body.port;
+  }
+
+  if (!opencodePort) {
+    throw createError({ statusCode: 400, message: "worktreeId or port is required" });
   }
 
   const role = body.role || "worker";
 
-  const worktree = await db.query.worktrees.findFirst({
-    where: eq(worktrees.id, body.worktreeId),
-  });
-
-  if (!worktree || !worktree.opencodePort) {
-    throw createError({
-      statusCode: 400,
-      message: "Worktree not found or OpenCode server not running",
+  if (!forceNew && worktreeId) {
+    const existing = await db.query.sessions.findFirst({
+      where: and(eq(sessions.worktreeId, worktreeId), eq(sessions.role, role)),
     });
-  }
 
-  // Check for existing session on this worktree with the same role
-  const existing = await db.query.sessions.findFirst({
-    where: and(
-      eq(sessions.worktreeId, body.worktreeId),
-      eq(sessions.role, role),
-    ),
-  });
+    if (existing?.opencodeSessionId) {
+      try {
+        const res = await fetch(
+          `http://localhost:${opencodePort}/session/${existing.opencodeSessionId}/message`,
+        );
+        if (res.ok) {
+          return { sessionId: existing.id, opencodeSessionId: existing.opencodeSessionId, reused: true };
+        }
+      } catch {}
 
-  if (existing?.opencodeSessionId) {
-    // Verify the OpenCode session still exists
-    try {
-      const res = await fetch(
-        `http://localhost:${worktree.opencodePort}/session/${existing.opencodeSessionId}/message`,
-      );
-      if (res.ok) {
-        return { sessionId: existing.id, opencodeSessionId: existing.opencodeSessionId, reconnected: true };
+      let newOcId: string | undefined;
+      try {
+        const res = await fetch(`http://localhost:${opencodePort}/session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        newOcId = (await res.json()).id;
+      } catch {}
+
+      if (newOcId) {
+        await db.update(sessions).set({ opencodeSessionId: newOcId, status: "idle" }).where(eq(sessions.id, existing.id));
+        return { sessionId: existing.id, opencodeSessionId: newOcId, reused: false };
       }
-    } catch {
-      // Session gone, create a new one below
     }
   }
 
-  // Create a session on the OpenCode server
-  const opencodeUrl = `http://localhost:${worktree.opencodePort}`;
   let opencodeSessionId: string | undefined;
-
   try {
-    const res = await fetch(`${opencodeUrl}/session`, {
+    const res = await fetch(`http://localhost:${opencodePort}/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
-    const data = await res.json();
-    opencodeSessionId = data.id;
-  } catch (e) {
-    console.warn("Failed to create OpenCode session:", e);
-  }
-
-  if (existing) {
-    // Update the existing session with the new OpenCode session ID
-    await db
-      .update(sessions)
-      .set({ opencodeSessionId, status: "idle" })
-      .where(eq(sessions.id, existing.id));
-    return { sessionId: existing.id, opencodeSessionId, reconnected: false };
+    opencodeSessionId = (await res.json()).id;
+  } catch {
+    throw createError({ statusCode: 500, message: "Failed to create OpenCode session" });
   }
 
   const id = nanoid();
-  await db.insert(sessions).values({
-    id,
-    worktreeId: body.worktreeId,
-    opencodeSessionId,
-    role,
-    status: "idle",
-  });
+  await db.insert(sessions).values({ id, worktreeId, opencodeSessionId, role, status: "idle" });
 
-  return { sessionId: id, opencodeSessionId, reconnected: false };
+  return { sessionId: id, opencodeSessionId };
 });

@@ -15,7 +15,7 @@ const projectId = computed(() => {
 
 const activeTab = ref<SidebarTab>("agents");
 
-const { activeWorktreePath, setActive, isActive } = useActiveWorktree(projectId);
+const { activeWorktreePath, activeSessionId, setActive, setActiveSession, isActive } = useActiveWorktree(projectId);
 
 const { data: worktreeList, refresh: refreshWorktrees } = await useFetch(
   "/api/worktrees",
@@ -96,6 +96,69 @@ async function deleteWorktree(wt: any, e: Event) {
   }
 }
 
+
+// Sessions for the active worktree
+const activeWorktreeId = computed(() => {
+  if (!activeWorktreePath.value) return null;
+  const wt = worktreeList.value.find((w: any) => w.path === activeWorktreePath.value);
+  return wt?.id || null;
+});
+
+const mainWorktreeId = computed(() => mainWorktree.value?.id || null);
+
+const sessionWorktreeId = computed(() => activeWorktreeId.value || mainWorktreeId.value);
+
+const { data: sessionList, refresh: refreshSessions } = useFetch(
+  "/api/sessions",
+  {
+    query: { worktreeId: sessionWorktreeId },
+    watch: [sessionWorktreeId],
+    default: () => [],
+  },
+);
+
+watch(activeSessionId, () => refreshSessions());
+
+// Also fetch sessions for main when viewing a worktree (to show main's sessions when main is expanded)
+const { data: mainSessionList } = useFetch(
+  "/api/sessions",
+  {
+    query: { worktreeId: mainWorktreeId },
+    watch: [mainWorktreeId],
+    default: () => [],
+  },
+);
+
+function sessionsForWorktree(wt: any): any[] {
+  if (!wt) return [];
+  if (wt.isMain) return mainSessionList.value as any[];
+  if (wt.id === sessionWorktreeId.value) return sessionList.value as any[];
+  return [];
+}
+
+function selectSession(ocSessionId: string) {
+  setActiveSession(ocSessionId);
+  const key = activeWorktreePath.value ? `wt:${activeWorktreePath.value}` : projectId.value;
+  if (!key) return;
+  store.switchSession(key, ocSessionId);
+}
+
+async function deleteSession(ocSessionId: string, e: Event) {
+  e.stopPropagation();
+  // If this is the active session, switch to another one first
+  if (activeSessionId.value === ocSessionId) {
+    const sessions = sessionsForWorktree(
+      activeWorktreePath.value ? activeWorktreeObj.value : mainWorktree.value,
+    );
+    const other = sessions.find((s: any) => s.opencodeSessionId !== ocSessionId);
+    if (other) {
+      selectSession(other.opencodeSessionId);
+    }
+  }
+  // TODO: Add confirmation dialog
+  // For now just refresh the list (OpenCode sessions can't be deleted via API easily)
+  await refreshSessions();
+}
 
 // File tree for the active worktree
 const activeWorktreeObj = computed(() => {
@@ -179,31 +242,52 @@ const { data: fileTree, refresh: refreshFileTree } = await useFetch(
       </div>
 
       <div v-else class="flex flex-col gap-0.5">
-        <OSidebarWorktreeItem
-          v-if="mainWorktree"
-          is-main
-          :branch-name="mainWorktree.branchName"
-          :agent-status="mainWorktree.agentStatus"
-          :pending-signals="mainWorktree.pendingSignals"
-          :active="isActive(null)"
-          @click="selectWorktree(mainWorktree)"
-        />
+        <template v-if="mainWorktree">
+          <OSidebarWorktreeItem
+            is-main
+            :branch-name="mainWorktree.branchName"
+            :agent-status="mainWorktree.agentStatus"
+            :pending-signals="mainWorktree.pendingSignals"
+            :active="isActive(null)"
+            @click="selectWorktree(mainWorktree)"
+          />
+          <template v-if="isActive(null) && sessionsForWorktree(mainWorktree).length > 1">
+            <OSidebarSessionItem
+              v-for="session in sessionsForWorktree(mainWorktree)"
+              :key="session.opencodeSessionId"
+              :title="session.title"
+              :active="activeSessionId === session.opencodeSessionId || (!activeSessionId && sessionsForWorktree(mainWorktree).indexOf(session) === 0)"
+              @click="selectSession(session.opencodeSessionId)"
+              @delete="deleteSession(session.opencodeSessionId, $event)"
+            />
+          </template>
+        </template>
 
         <template v-if="linkedWorktrees.length">
           <div class="text-copy-xs text-tertiary mt-2 mb-0.5 px-2 font-medium uppercase tracking-wide">
             Worktrees
           </div>
-          <OSidebarWorktreeItem
-            v-for="wt in linkedWorktrees"
-            :key="wt.path"
-            :branch-name="wt.branchName"
-            :agent-status="wt.agentStatus"
-            :pending-signals="wt.pendingSignals"
-            :active="isActive(wt.path)"
-            removable
-            @click="selectWorktree(wt)"
-            @remove="deleteWorktree(wt, $event)"
-          />
+          <template v-for="wt in linkedWorktrees" :key="wt.path">
+            <OSidebarWorktreeItem
+              :branch-name="wt.branchName"
+              :agent-status="wt.agentStatus"
+              :pending-signals="wt.pendingSignals"
+              :active="isActive(wt.path)"
+              removable
+              @click="selectWorktree(wt)"
+              @remove="deleteWorktree(wt, $event)"
+            />
+            <template v-if="isActive(wt.path) && sessionsForWorktree(wt).length > 1">
+              <OSidebarSessionItem
+                v-for="session in sessionsForWorktree(wt)"
+                :key="session.opencodeSessionId"
+                :title="session.title"
+                :active="activeSessionId === session.opencodeSessionId || (!activeSessionId && sessionsForWorktree(wt).indexOf(session) === 0)"
+                @click="selectSession(session.opencodeSessionId)"
+                @delete="deleteSession(session.opencodeSessionId, $event)"
+              />
+            </template>
+          </template>
         </template>
 
         <div

@@ -317,8 +317,17 @@ export function useChanges() {
       : selectedDiffMode.value === "unstaged" ? parsedUnstaged.value
       : parsedCombined.value;
 
+    // Only fetch file content for files not in any diff.
+    // Untracked files (status ?) need content since they won't be in the diff output.
+    // Files opened from file tree sidebar also need content.
+    // Modified files will have their diff parsed — don't fetch content for them.
     if (!map.has(path)) {
-      fetchFileContent(path);
+      const fileEntry = files.value.find((f) => f.path === path);
+      const isUntracked = fileEntry?.status === "?";
+      const isNotInFileList = !fileEntry;
+      if (isUntracked || isNotInFileList) {
+        fetchFileContent(path);
+      }
     }
   }
 

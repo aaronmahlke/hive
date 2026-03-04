@@ -109,6 +109,10 @@ export function useDragReorder<T>(
     }
   }
 
+  function onDragStart(e: DragEvent) {
+    e.preventDefault();
+  }
+
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
 
@@ -116,7 +120,6 @@ export function useDragReorder<T>(
     if (!container) return;
     const target = e.target as HTMLElement;
 
-    // Don't drag if clicking a button (close tab, etc.)
     if (target.closest("button")) return;
 
     // Find the direct child that was clicked
@@ -252,11 +255,13 @@ export function useDragReorder<T>(
   onMounted(() => {
     containerRef.value?.addEventListener("pointerdown", onPointerDown);
     containerRef.value?.addEventListener("click", onClickCapture, true);
+    containerRef.value?.addEventListener("dragstart", onDragStart);
   });
 
   onUnmounted(() => {
     containerRef.value?.removeEventListener("pointerdown", onPointerDown);
     containerRef.value?.removeEventListener("click", onClickCapture, true);
+    containerRef.value?.removeEventListener("dragstart", onDragStart);
     cleanup();
   });
 

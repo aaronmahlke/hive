@@ -297,6 +297,26 @@ export default defineWebSocketHandler({
         break;
       }
 
+      case "switch_session": {
+        const { sessionId: newSessionId } = msg.data || {};
+        if (!newSessionId) return;
+
+        // Update the peer's session ID
+        info.sessionId = newSessionId;
+        peerInfo.set(peer.id, info);
+
+        // Re-fetch and send all initial data for the new session
+        Promise.all([
+          fetchAndSendStatus(peer, info.port, newSessionId),
+          fetchAndSendMessages(peer, info.port, newSessionId),
+          fetchAndSendPermissions(peer, info.port),
+          fetchAndSendQuestions(peer, info.port),
+        ]).then(() => {
+          peer.send(JSON.stringify({ type: "session_switched", data: { sessionId: newSessionId } }));
+        }).catch(() => {});
+        break;
+      }
+
       case "ping":
         break;
     }

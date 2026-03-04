@@ -119,10 +119,8 @@ const splitRows = computed<SplitRow[]>(() => {
   for (let h = 0; h < fileDiff.hunks.length; h++) {
     const hunk = fileDiff.hunks[h];
 
-    if (h === 0) {
-      oldLine = hunk.deletionStart;
-      newLine = hunk.additionStart;
-    }
+    oldLine = hunk.deletionStart;
+    newLine = hunk.additionStart;
 
     let startLine = 1;
     let endLine = hunk.deletionStart - 1;
@@ -354,6 +352,14 @@ function commentsOnLine(lineNumber: number, side: "left" | "right"): ChangeComme
   );
 }
 
+function isLineCommented(lineNumber: number | null, side: "left" | "right"): boolean {
+  if (lineNumber == null) return false;
+  const diffSide = side === "left" ? "deletions" : "additions";
+  return comments.some(
+    (c) => !c.resolved && (c.side === diffSide || (!c.side && side === "right")) && lineNumber >= c.startLine && lineNumber <= c.endLine,
+  );
+}
+
 function isCommentInputOnLine(lineNumber: number, side: "left" | "right"): boolean {
   if (!showCommentInput.value || !selectedRange.value) return false;
   return selectedRange.value.end === lineNumber && selectionSide.value === side;
@@ -439,11 +445,13 @@ onUnmounted(() => {
             :tokens="getTokensForRow(row.left.lineNumber, 'left', row.left.text)"
             :word-spans="row.left.type === 'deletion' ? getWordSpans(row.left.text, row.left.pairedText, 'deletion') : undefined"
             :selected="isLineSelected(row.left.lineNumber, 'left')"
+            :commented="isLineCommented(row.left.lineNumber, 'left')"
             :hovered="hoveredLine === row.left.lineNumber && hoveredSide === 'left'"
             @mousedown-number="onLineNumberMouseDown($event, 'left')"
             @mouseenter-number="onLineNumberMouseEnter($event, 'left')"
             @mouseenter-line="onLineHover($event, 'left')"
             @mouseleave-line="onLineLeave"
+            @click-plus="onPlusClick($event, 'left')"
           />
 
           <ODiffLine
@@ -452,11 +460,13 @@ onUnmounted(() => {
             :type="row.left.type"
             :tokens="getTokensForRow(row.left.lineNumber, 'left', row.left.text)"
             :selected="isLineSelected(row.left.lineNumber, 'left')"
+            :commented="isLineCommented(row.left.lineNumber, 'left')"
             :hovered="hoveredLine === row.left.lineNumber && hoveredSide === 'left'"
             @mousedown-number="onLineNumberMouseDown($event, 'left')"
             @mouseenter-number="onLineNumberMouseEnter($event, 'left')"
             @mouseenter-line="onLineHover($event, 'left')"
             @mouseleave-line="onLineLeave"
+            @click-plus="onPlusClick($event, 'left')"
           />
 
           <div v-else-if="row.kind === 'buffer-left'" class="diff-buffer" />
@@ -518,11 +528,13 @@ onUnmounted(() => {
             :tokens="getTokensForRow(row.right.lineNumber, 'right', row.right.text)"
             :word-spans="row.right.type === 'addition' ? getWordSpans(row.right.text, row.right.pairedText, 'addition') : undefined"
             :selected="isLineSelected(row.right.lineNumber, 'right')"
+            :commented="isLineCommented(row.right.lineNumber, 'right')"
             :hovered="hoveredLine === row.right.lineNumber && hoveredSide === 'right'"
             @mousedown-number="onLineNumberMouseDown($event, 'right')"
             @mouseenter-number="onLineNumberMouseEnter($event, 'right')"
             @mouseenter-line="onLineHover($event, 'right')"
             @mouseleave-line="onLineLeave"
+            @click-plus="onPlusClick($event, 'right')"
           />
 
           <ODiffLine
@@ -531,11 +543,13 @@ onUnmounted(() => {
             :type="row.right.type"
             :tokens="getTokensForRow(row.right.lineNumber, 'right', row.right.text)"
             :selected="isLineSelected(row.right.lineNumber, 'right')"
+            :commented="isLineCommented(row.right.lineNumber, 'right')"
             :hovered="hoveredLine === row.right.lineNumber && hoveredSide === 'right'"
             @mousedown-number="onLineNumberMouseDown($event, 'right')"
             @mouseenter-number="onLineNumberMouseEnter($event, 'right')"
             @mouseenter-line="onLineHover($event, 'right')"
             @mouseleave-line="onLineLeave"
+            @click-plus="onPlusClick($event, 'right')"
           />
 
           <div v-else-if="row.kind === 'buffer-right'" class="diff-buffer" />
@@ -575,18 +589,6 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Hover + button -->
-    <Teleport to="body">
-      <div
-        v-if="hoveredLine != null && !showCommentInput && !selecting"
-        class="pointer-events-none fixed z-50"
-        :style="{
-          top: '0',
-          left: '0',
-          display: 'none',
-        }"
-      />
-    </Teleport>
   </div>
 </template>
 

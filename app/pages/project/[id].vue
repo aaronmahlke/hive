@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CommandLineIcon } from "@heroicons/vue/16/solid";
+import { CommandLineIcon, PlusIcon } from "@heroicons/vue/16/solid";
 
 const route = useRoute();
 const projectId = computed(() => route.params.id as string);
@@ -7,7 +7,8 @@ const projectId = computed(() => route.params.id as string);
 const { data: projectData } = useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
-const { activeWorktreePath } = useActiveWorktree(projectId);
+const { activeWorktreePath, activeSessionId, setActiveSession } = useActiveWorktree(projectId);
+const chatKey = computed(() => `${connectionKey.value}:${activeSessionId.value || "default"}`);
 
 // Fetch worktrees to resolve the active worktree's metadata
 const { data: worktreeList, refresh: refreshWorktrees } = await useFetch("/api/worktrees", {
@@ -50,7 +51,6 @@ watch(activeWorktreePath, async (path) => {
       branchName: wt.branchName,
     });
   } else {
-    // Worktree not in list yet (edge case) — extract branch from path
     const branchGuess = path.split("/").pop() || "unknown";
     store.activateWorktree({
       projectId: projectId.value,
@@ -59,6 +59,35 @@ watch(activeWorktreePath, async (path) => {
     });
   }
 }, { immediate: true });
+
+const creatingSession = ref(false);
+
+async function createNewSession() {
+  const wt = activeWorktree.value;
+  const worktreeId = wt?.id || store.connection(connectionKey.value).state.value?.worktreeId;
+
+  if (!worktreeId) return;
+
+  creatingSession.value = true;
+  try {
+    const result = await $fetch("/api/sessions?new=true", {
+      method: "POST",
+      body: { worktreeId },
+    }) as { sessionId: string; opencodeSessionId: string };
+
+    setActiveSession(result.opencodeSessionId);
+    store.switchSession(connectionKey.value, result.opencodeSessionId);
+
+    nextTick(() => {
+      const input = document.querySelector("textarea[data-chat-input]") as HTMLTextAreaElement;
+      input?.focus();
+    });
+  } catch (e: any) {
+    console.error("Failed to create session:", e);
+  } finally {
+    creatingSession.value = false;
+  }
+}
 
 // Header title
 const headerTitle = computed(() => {
@@ -99,6 +128,14 @@ const isSelectedFileViewed = computed(() =>
       :title="headerTitle"
     >
       <template #trailing>
+        <OButton
+          variant="transparent"
+          size="xs"
+          :icon-left="PlusIcon"
+          :loading="creatingSession"
+          title="New session"
+          @click="createNewSession"
+        />
         <OScriptRunner
           :project-id="projectId"
           :worktree-path="activeWorktreePath"
@@ -107,7 +144,7 @@ const isSelectedFileViewed = computed(() =>
     </OHeader>
 
     <OChat
-      :key="connectionKey"
+      :key="chatKey"
       :project-id="connectionKey"
       :placeholder="activeWorktree ? `Chat with ${activeWorktree.branchName} agent...` : 'Chat with the main agent...'"
     />

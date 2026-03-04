@@ -60,7 +60,6 @@ function closeTab(projectId: string, e: Event) {
   e.preventDefault();
   e.stopPropagation();
 
-  // Disconnect WebSocket and clean up state for this project
   store.deactivate(projectId);
 
   openTabs.value = openTabs.value.filter((id) => id !== projectId);
@@ -74,42 +73,39 @@ function closeTab(projectId: string, e: Event) {
   }
 }
 
-// --- Tab switching with Cmd+Shift+Arrow keys ---
-onKeyStroke("ArrowRight", (e) => {
-  if (!e.metaKey || !e.shiftKey) return;
-  e.preventDefault();
+function switchToNext() {
   if (!openTabs.value.length) return;
-
-  const idx = currentProjectId.value
-    ? openTabs.value.indexOf(currentProjectId.value)
-    : -1;
-
-  // Wrap around: from last tab go to first, from home go to first
-  const nextIdx = idx === -1 || idx >= openTabs.value.length - 1
-    ? 0
-    : idx + 1;
-
+  const idx = currentProjectId.value ? openTabs.value.indexOf(currentProjectId.value) : -1;
+  const nextIdx = idx === -1 || idx >= openTabs.value.length - 1 ? 0 : idx + 1;
   router.push(`/project/${openTabs.value[nextIdx]}`);
+}
+
+function switchToPrev() {
+  if (!openTabs.value.length) return;
+  const idx = currentProjectId.value ? openTabs.value.indexOf(currentProjectId.value) : -1;
+  const prevIdx = idx <= 0 ? openTabs.value.length - 1 : idx - 1;
+  router.push(`/project/${openTabs.value[prevIdx]}`);
+}
+
+onKeyStroke("ArrowRight", (e) => {
+  if (!e.metaKey || !e.altKey) return;
+  e.preventDefault();
+  switchToNext();
 });
 
 onKeyStroke("ArrowLeft", (e) => {
-  if (!e.metaKey || !e.shiftKey) return;
+  if (!e.metaKey || !e.altKey) return;
   e.preventDefault();
-  if (!openTabs.value.length) return;
-
-  const idx = currentProjectId.value
-    ? openTabs.value.indexOf(currentProjectId.value)
-    : -1;
-
-  // Wrap around: from first tab go to last, from home go to last
-  const prevIdx = idx <= 0
-    ? openTabs.value.length - 1
-    : idx - 1;
-
-  router.push(`/project/${openTabs.value[prevIdx]}`);
+  switchToPrev();
 });
 
-// --- Drag-to-reorder tabs ---
+onKeyStroke("Tab", (e) => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  if (e.shiftKey) switchToPrev();
+  else switchToNext();
+});
+
 const { containerRef: tabListRef, draggingIndex } = useDragReorder(openTabs);
 </script>
 
@@ -140,7 +136,8 @@ const { containerRef: tabListRef, draggingIndex } = useDragReorder(openTabs);
           <div class="flex items-center">
             <NuxtLink
               :to="`/project/${proj!.id}`"
-              class="text-copy-sm max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-1 outline-none"
+              draggable="false"
+              class="text-copy-sm max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-1 outline-none select-none"
               :class="
                 currentProjectId === proj!.id ? 'text-primary' : 'text-tertiary'
               "
