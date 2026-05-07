@@ -63,6 +63,14 @@ const userText = computed(() => {
     .join("\n");
 });
 
+const userImages = computed(() => {
+  return userMessage.parts
+    .filter((p) => p.type === "file" && (p.mime as string)?.startsWith("image/") && p.url)
+    .map((p) => p.url as string);
+});
+
+const expandedImage = ref<string | null>(null);
+
 // Build sequential render blocks from all assistant messages.
 // Consecutive tool calls are grouped into a single collapsible block.
 // Text parts are individual blocks between tool groups.
@@ -168,7 +176,22 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
     <!-- User message -->
     <div class="px-5 pb-3">
       <div class="bg-surface-1 inline-block max-w-full rounded-xl px-4 py-2.5">
-        <p class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
+        <p v-if="userText" class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
+        <div v-if="userImages.length" class="flex flex-wrap gap-2" :class="userText ? 'mt-2' : ''">
+          <button
+            v-for="(src, i) in userImages"
+            :key="i"
+            type="button"
+            class="block overflow-hidden rounded-lg outline-none"
+            @click="expandedImage = src"
+          >
+            <img
+              :src="src"
+              :alt="`Image ${i + 1}`"
+              class="max-h-48 max-w-64 rounded-lg object-contain"
+            />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -242,5 +265,11 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
         </button>
       </div>
     </div>
+
+    <OImageViewer
+      v-if="expandedImage"
+      :src="expandedImage"
+      @close="expandedImage = null"
+    />
   </div>
 </template>

@@ -59,7 +59,8 @@ export default defineEventHandler(async (event) => {
   // Create a new session
   try {
     const t2 = Date.now();
-    const res = await fetch(`http://localhost:${port}/session`, {
+    const dirParam = `?directory=${encodeURIComponent(project.path)}`;
+    const res = await fetch(`http://localhost:${port}/session${dirParam}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),

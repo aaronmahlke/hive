@@ -175,8 +175,16 @@ export default defineWebSocketHandler({
 
     switch (msg.type) {
       case "prompt": {
-        const { message: text, agent, model } = msg.data || {};
-        if (!text) return;
+        const { message: text, agent, model, attachments } = msg.data || {};
+        if (!text && !attachments?.length) return;
+
+        const parts: any[] = [];
+        if (text) parts.push({ type: "text", text });
+        if (attachments) {
+          for (const att of attachments) {
+            parts.push({ type: "file", mime: att.mime, url: att.url, filename: att.filename });
+          }
+        }
 
         try {
           await fetch(
@@ -185,7 +193,7 @@ export default defineWebSocketHandler({
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                parts: [{ type: "text", text }],
+                parts,
                 ...(agent && { agent }),
                 ...(model && { model }),
               }),

@@ -25,12 +25,12 @@ watch(isWorking, (working, wasWorking) => {
   }
 });
 
-function handleSend(text: string) {
+function handleSend(text: string, attachments?: { type: "file"; mime: string; url: string; filename: string }[]) {
   draft.value = "";
   if (isWorking.value) {
     messageQueue.value.push(text);
   } else {
-    store.sendPrompt(projectId, text, { agent: mode.value });
+    store.sendPrompt(projectId, text, { agent: mode.value, attachments });
     stickToBottom.value = true;
     scrollToBottom();
   }

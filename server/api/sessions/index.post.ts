@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
 
   let opencodePort: number | null = null;
   let worktreeId: string | null = body.worktreeId || null;
+  let worktreePath: string | null = null;
 
   if (worktreeId) {
     const worktree = await db.query.worktrees.findFirst({
@@ -24,6 +25,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "Worktree not found or server not running" });
     }
     opencodePort = worktree.opencodePort;
+    worktreePath = worktree.path;
   } else if (body.port) {
     opencodePort = body.port;
   }
@@ -33,6 +35,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const role = body.role || "worker";
+  const dirParam = worktreePath ? `?directory=${encodeURIComponent(worktreePath)}` : "";
 
   if (!forceNew && worktreeId) {
     const existing = await db.query.sessions.findFirst({
@@ -51,7 +54,7 @@ export default defineEventHandler(async (event) => {
 
       let newOcId: string | undefined;
       try {
-        const res = await fetch(`http://localhost:${opencodePort}/session`, {
+        const res = await fetch(`http://localhost:${opencodePort}/session${dirParam}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({}),
@@ -68,7 +71,7 @@ export default defineEventHandler(async (event) => {
 
   let opencodeSessionId: string | undefined;
   try {
-    const res = await fetch(`http://localhost:${opencodePort}/session`, {
+    const res = await fetch(`http://localhost:${opencodePort}/session${dirParam}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),

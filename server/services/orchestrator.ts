@@ -76,7 +76,8 @@ export async function delegateTask(opts: {
   let opencodeSessionId: string | undefined;
 
   try {
-    const res = await fetch(`http://localhost:${port}/session`, {
+    const dirParam = `?directory=${encodeURIComponent(worktreePath)}`;
+    const res = await fetch(`http://localhost:${port}/session${dirParam}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),

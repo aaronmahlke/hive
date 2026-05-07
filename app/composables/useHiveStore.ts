@@ -552,8 +552,16 @@ export function useHiveStore() {
     return connection(projectId);
   }
 
-  function sendPrompt(key: string, text: string, opts?: { agent?: string; model?: string }) {
+  function sendPrompt(key: string, text: string, opts?: { agent?: string; model?: string; attachments?: { type: "file"; mime: string; url: string; filename: string }[] }) {
     const s = ensureState(key);
+
+    const parts: any[] = [];
+    if (text) parts.push({ type: "text", text });
+    if (opts?.attachments) {
+      for (const att of opts.attachments) {
+        parts.push({ type: "file", mime: att.mime, url: att.url, filename: att.filename });
+      }
+    }
 
     const msgs = getMessages(key);
     msgs.value = [
@@ -565,14 +573,19 @@ export function useHiveStore() {
           sessionID: s.sessionId || "",
           time: { created: Date.now() },
         },
-        parts: [{ type: "text", text }],
+        parts,
       },
     ];
     s.isWorking = true;
 
     wsSend(key, {
       type: "prompt",
-      data: { message: text, ...opts },
+      data: {
+        message: text,
+        attachments: opts?.attachments,
+        ...(opts?.agent && { agent: opts.agent }),
+        ...(opts?.model && { model: opts.model }),
+      },
     });
   }
 
