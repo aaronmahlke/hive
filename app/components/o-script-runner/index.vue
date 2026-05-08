@@ -74,7 +74,7 @@ async function stop() {
         <button
           v-if="isRunning"
           type="button"
-          class="text-copy text-danger hover:bg-surface-1 flex w-full items-center gap-2 px-3 py-1.5 text-left"
+          class="text-copy text-danger hover:bg-subtle flex w-full items-center gap-2 px-3 py-1.5 text-left"
           @click="stop"
         >
           <StopIcon class="size-3 shrink-0" />
@@ -83,14 +83,14 @@ async function stop() {
 
         <div
           v-if="isRunning && scripts.length"
-          class="border-edge mx-2 my-1 border-t"
+          class="border-neutral mx-2 my-1 border-t"
         />
 
         <button
           v-for="script in scripts"
           :key="script"
           type="button"
-          class="text-copy hover:bg-surface-1 flex w-full items-center gap-2 px-3 py-1.5 text-left"
+          class="text-copy hover:bg-subtle flex w-full items-center gap-2 px-3 py-1.5 text-left"
           :class="script === activeScript ? 'text-success' : 'text-primary'"
           @click="runScript(script)"
         >

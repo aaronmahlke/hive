@@ -113,7 +113,7 @@ async function clearConfigPath(projectId: string) {
           <div
             v-for="proj in projectList"
             :key="proj.id"
-            class="bg-surface-1 border-edge rounded-md border px-3 py-2"
+            class="bg-subtle border-neutral rounded-md border px-3 py-2"
           >
             <div class="flex items-center justify-between">
               <div class="min-w-0">
@@ -152,7 +152,7 @@ async function clearConfigPath(projectId: string) {
         </div>
         <div
           v-else
-          class="bg-surface-1 border-edge text-copy text-tertiary mb-8 rounded-lg border p-8 text-center"
+          class="bg-subtle border-neutral text-copy text-tertiary mb-8 rounded-lg border p-8 text-center"
         >
           No projects yet. Open a project first.
         </div>
@@ -169,7 +169,7 @@ async function clearConfigPath(projectId: string) {
             <div
               v-for="entry in entries"
               :key="entry.id"
-              class="bg-surface-1 border-edge flex items-center justify-between rounded-md border px-3 py-2"
+              class="bg-subtle border-neutral flex items-center justify-between rounded-md border px-3 py-2"
             >
               <div>
                 <span class="text-copy text-primary font-medium">{{ entry.key }}</span>
@@ -182,18 +182,18 @@ async function clearConfigPath(projectId: string) {
 
         <div
           v-if="!profile?.length"
-          class="bg-surface-1 border-edge text-copy text-tertiary rounded-lg border p-8 text-center"
+          class="bg-subtle border-neutral text-copy text-tertiary rounded-lg border p-8 text-center"
         >
           No preferences configured yet. Add some below.
         </div>
 
-        <div class="border-edge mt-6 border-t pt-6">
+        <div class="border-neutral mt-6 border-t pt-6">
           <h3 class="text-label text-primary mb-3">Add Preference</h3>
           <form class="flex flex-col gap-3" @submit.prevent="addEntry">
             <div class="flex gap-2">
               <select
                 v-model="newEntry.category"
-                class="bg-surface-1 border-edge text-copy text-primary h-8 rounded-md border px-2"
+                class="bg-subtle border-neutral text-copy text-primary h-8 rounded-md border px-2"
               >
                 <option v-for="cat in categories" :key="cat" :value="cat">
                   {{ cat }}

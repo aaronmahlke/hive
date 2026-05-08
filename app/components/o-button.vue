@@ -37,13 +37,13 @@ const {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-surface-1 text-primary hover:bg-surface-2 border border-edge shadow-xs active:bg-surface-3",
+    "bg-base-2 text-primary border border-neutral shadow-xs hover:bg-subtle active:bg-subtle",
   secondary:
-    "bg-surface-1 text-primary hover:bg-surface-2 active:bg-base border border-transparent",
+    "bg-base-2 text-primary border border-transparent hover:bg-subtle active:bg-base-1",
   tertiary:
     "text-secondary hover:text-primary border border-transparent",
   transparent:
-    "text-secondary hover:bg-surface-1 active:bg-inverse/10 border !border-transparent",
+    "text-secondary hover:bg-subtle active:bg-inverse/10 border !border-transparent",
   ghost:
     "text-tertiary hover:text-primary hover:bg-inverse/10 active:bg-inverse/15 border !border-transparent",
   danger:
@@ -51,7 +51,7 @@ const variantClasses: Record<Variant, string> = {
   "danger-light":
     "text-danger bg-danger-subtle hover:bg-danger/30 active:bg-danger/50 border border-transparent",
   outline:
-    "text-secondary border border-edge-subtle hover:bg-inverse/5 active:bg-inverse/10",
+    "text-secondary border border-neutral hover:bg-subtle active:bg-inverse/10",
 };
 
 const paddingClasses: Record<Size, string> = {

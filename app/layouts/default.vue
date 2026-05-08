@@ -53,7 +53,7 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKeydown));
       </aside>
 
       <main
-        class="bg-base-1 relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg ring-1 ring-edge"
+        class="bg-base-1 relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg ring-1 ring-neutral"
       >
         <slot />
       </main>

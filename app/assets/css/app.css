@@ -3,88 +3,125 @@
 
 /*
  * ═══════════════════════════════════════════════════════════════
- * OKLCH Seed-Based Color System
+ * Color System — Carrot-inspired OKLCH tokens
  *
- * Ported from Zeitwerk's design system.
- *
- * Two axes:
- *   base-*    = spatial layers (fixed direction, always darker = further back)
- *   surface-* = interactive shifts (relative to inherited --base, uses --dir)
- *
- * --seed is the raw OKLCH root color.
- * --base is the inherited context variable — set by .base-* classes,
- * and all derived tokens (surfaces, text, edges) adapt automatically.
+ * Dark mode only. 12-step taupe neutral scale (hue 55, chroma 0.005).
+ * 3 background layers, 1 interactive surface, 2 border levels.
+ * Purple accent (hue 250). Radix-based intent colors.
  * ═══════════════════════════════════════════════════════════════
  */
 
 :root {
-  /* ── Seed coordinates ── */
-  --seed-h: 55;
-  --seed-c: 0.002;
-  --accent-h: 250;
-  --accent-c: 0.18;
-
-  /* ── Control ── */
   color-scheme: dark;
-  --dir: 1; /* dark mode forced: surfaces lighten to elevate */
-  --contrast: 1;
-
-  /* ── Edge alpha ── */
-  --edge-alpha: 0.08;
-  --edge-alpha-subtle: 0.04;
-  --edge-alpha-strong: 0.14;
-
-  /* ── Base level offsets from seed ── */
-  --base-0-offset: 0.12;
-  --base-1-offset: 0.02;
-  --base-3-offset: -0.03;
-
-  /* ── Surface steps per base ── */
-  --surface-step-on-0: 0.14;
-  --surface-step-on-1: 0.065;
-  --surface-step-on-2: 0.05;
-  --surface-step-on-3: 0.04;
-
-  /* ── Fallback for elements not inside a base-* class ── */
-  --surface-1: var(--surface-step-on-2);
-  --surface-2: calc(var(--surface-step-on-2) * 2);
-  --surface-3: calc(var(--surface-step-on-2) * 3);
-
-  /* ── Composed seed colors ── */
-  --seed: oklch(0.15 var(--seed-c) var(--seed-h));
-  --accent: oklch(0.7 var(--accent-c) var(--accent-h));
-
-  /* ── Inherited context ── */
-  --base: var(--seed);
-
-  /* ── Intent seeds ── */
-  --danger: oklch(0.7 0.18 25);
-  --warn: oklch(0.8 0.14 85);
-  --success: oklch(0.7 0.15 155);
 }
 
-/* Light mode values — preserved for future theme toggle support
-@media (prefers-color-scheme: light) {
-  :root {
-    --dir: -1;
-    --edge-alpha: 0.12;
-    --edge-alpha-subtle: 0.06;
-    --edge-alpha-strong: 0.2;
-    --base-0-offset: 0.08;
-    --base-1-offset: 0.03;
-    --base-3-offset: -0.015;
-    --surface-step-on-0: 0.035;
-    --surface-step-on-1: 0.035;
-    --surface-step-on-2: 0.035;
-    --surface-step-on-3: 0.035;
-    --seed: oklch(0.985 var(--seed-c) var(--seed-h));
-    --accent: oklch(0.55 var(--accent-c) var(--accent-h));
-    --danger: oklch(0.55 0.2 25);
-    --warn: oklch(0.75 0.15 85);
-    --success: oklch(0.55 0.17 155);
-  }
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * Taupe Scale — 12 steps (dark mode)
+ *
+ * Radix conventions:
+ *   1-2:   Backgrounds
+ *   3-5:   Component backgrounds (default, hover, active)
+ *   6-8:   Borders (subtle, default, strong)
+ *   9-10:  Solid fills (default, hover)
+ *   11:    Low-contrast text
+ *   12:    High-contrast text
+ * ═══════════════════════════════════════════════════════════════
+ */
+:root {
+  --color-taupe-1: oklch(0.177 0.005 55);
+  --color-taupe-2: oklch(0.213 0.005 55);
+  --color-taupe-3: oklch(0.252 0.005 55);
+  --color-taupe-4: oklch(0.284 0.005 55);
+  --color-taupe-5: oklch(0.312 0.005 55);
+  --color-taupe-6: oklch(0.348 0.005 55);
+  --color-taupe-7: oklch(0.401 0.005 55);
+  --color-taupe-8: oklch(0.489 0.005 55);
+  --color-taupe-9: oklch(0.534 0.005 55);
+  --color-taupe-10: oklch(0.582 0.005 55);
+  --color-taupe-11: oklch(0.767 0.005 55);
+  --color-taupe-12: oklch(0.949 0.005 55);
 }
-*/
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * Purple Accent Scale — 12 steps (dark mode)
+ * ═══════════════════════════════════════════════════════════════
+ */
+:root {
+  --color-purple-1: oklch(0.18 0.02 270);
+  --color-purple-2: oklch(0.21 0.03 270);
+  --color-purple-3: oklch(0.27 0.06 270);
+  --color-purple-4: oklch(0.32 0.09 270);
+  --color-purple-5: oklch(0.37 0.11 270);
+  --color-purple-6: oklch(0.42 0.12 270);
+  --color-purple-7: oklch(0.48 0.13 270);
+  --color-purple-8: oklch(0.55 0.15 270);
+  --color-purple-9: oklch(0.65 0.18 270);
+  --color-purple-10: oklch(0.72 0.18 270);
+  --color-purple-11: oklch(0.82 0.14 270);
+  --color-purple-12: oklch(0.94 0.06 270);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * Red Scale — Based on Radix tomato (dark mode)
+ * ═══════════════════════════════════════════════════════════════
+ */
+:root {
+  --color-red-1: #181111;
+  --color-red-2: #1f1513;
+  --color-red-3: #391714;
+  --color-red-4: #4e1511;
+  --color-red-5: #5e1c16;
+  --color-red-6: #6e2920;
+  --color-red-7: #853a2d;
+  --color-red-8: #ac4d39;
+  --color-red-9: #e54d2e;
+  --color-red-10: #ec6142;
+  --color-red-11: #ff977d;
+  --color-red-12: #fbd3cb;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * Amber Scale — Based on Radix amber (dark mode)
+ * ═══════════════════════════════════════════════════════════════
+ */
+:root {
+  --color-amber-1: #16120c;
+  --color-amber-2: #1d180f;
+  --color-amber-3: #302008;
+  --color-amber-4: #3f2700;
+  --color-amber-5: #4d3000;
+  --color-amber-6: #5c3d05;
+  --color-amber-7: #714f19;
+  --color-amber-8: #8f6424;
+  --color-amber-9: #ffc53d;
+  --color-amber-10: #ffd60a;
+  --color-amber-11: #ffca16;
+  --color-amber-12: #ffe7b3;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * Green Scale — Based on Radix green (dark mode)
+ * ═══════════════════════════════════════════════════════════════
+ */
+:root {
+  --color-green-1: #0e1512;
+  --color-green-2: #121b17;
+  --color-green-3: #132d21;
+  --color-green-4: #113b29;
+  --color-green-5: #174933;
+  --color-green-6: #20573e;
+  --color-green-7: #28684a;
+  --color-green-8: #2f7c57;
+  --color-green-9: #30a46c;
+  --color-green-10: #33b074;
+  --color-green-11: #3dd68c;
+  --color-green-12: #b1f1cb;
+}
 
 @theme {
   /* ── Fonts ── */
@@ -93,132 +130,129 @@
 
   /*
    * ═══════════════════════════════════════
-   * BASE — Spatial layers (fixed direction)
+   * BACKGROUNDS — 3 spatial layers
    * ═══════════════════════════════════════
    */
-  --color-base-0: oklch(from var(--seed) calc(l - var(--base-0-offset) * var(--contrast)) c h);
-  --color-base-1: oklch(from var(--seed) calc(l - var(--base-1-offset) * var(--contrast)) c h);
-  --color-base-2: var(--seed);
-  --color-base-3: oklch(from var(--seed) calc(l - var(--base-3-offset) * var(--contrast)) c h);
+  --color-base-0: var(--color-taupe-1);
+  --color-base-1: var(--color-taupe-2);
+  --color-base-2: var(--color-taupe-3);
 
   /*
    * ═══════════════════════════════════════
-   * TEXT — Hierarchy via lightness
+   * INTERACTIVE — Alpha-based hover/highlight
+   *
+   * Works on any background layer because it's
+   * a semi-transparent overlay, not a fixed color.
    * ═══════════════════════════════════════
    */
-  --text-color-primary: oklch(
-    from var(--base) calc(l + 0.75 * var(--dir) * var(--contrast)) c h
-  );
-  --text-color-secondary: oklch(
-    from var(--base) calc(l + 0.55 * var(--dir) * var(--contrast)) c h
-  );
-  --text-color-tertiary: oklch(
-    from var(--base) calc(l + 0.4 * var(--dir) * var(--contrast)) c h
-  );
-  --text-color-inverse: var(--base);
+  --background-color-subtle: oklch(1 0 0 / 0.06);
 
   /*
    * ═══════════════════════════════════════
-   * EDGES — Semi-transparent
+   * TEXT — 3 hierarchy levels
    * ═══════════════════════════════════════
    */
-  --border-color-edge: oklch(
-    from var(--base) calc(l + 0.75 * var(--dir)) c h / var(--edge-alpha)
-  );
-  --border-color-edge-subtle: oklch(
-    from var(--base) calc(l + 0.75 * var(--dir)) c h / var(--edge-alpha-subtle)
-  );
-  --border-color-edge-strong: oklch(
-    from var(--base) calc(l + 0.75 * var(--dir)) c h / var(--edge-alpha-strong)
-  );
+  --text-color-primary: var(--color-taupe-12);
+  --text-color-secondary: var(--color-taupe-11);
+  --text-color-tertiary: var(--color-taupe-9);
+  --text-color-inverse: var(--color-taupe-1);
 
   /*
    * ═══════════════════════════════════════
-   * RING — Same as edge, no layout impact
+   * BORDERS — 2 levels
    * ═══════════════════════════════════════
    */
-  --ring-color-edge: oklch(
-    from var(--base) calc(l + 0.75 * var(--dir)) c h / var(--edge-alpha)
-  );
+  --border-color-neutral: var(--color-taupe-5);
+  --border-color-neutral-strong: var(--color-taupe-7);
+
+  --ring-color-neutral: var(--color-taupe-5);
+  --ring-color-focus: var(--color-purple-9);
 
   /*
    * ═══════════════════════════════════════
-   * OUTLINE — Mirrors edge
+   * ACCENT — Purple
    * ═══════════════════════════════════════
    */
-  --outline-color-edge: oklch(
-    from var(--base) calc(l + 0.75 * var(--dir)) c h / var(--edge-alpha)
-  );
+  --background-color-accent: var(--color-purple-9);
+  --background-color-accent-subtle: var(--color-purple-3);
+  --background-color-accent-strong: var(--color-purple-8);
+  --background-color-accent-on: oklch(0.99 0 0);
+  --text-color-accent: var(--color-purple-11);
+  --text-color-accent-on: oklch(0.99 0 0);
+  --border-color-accent: var(--color-purple-7);
+  --color-accent-strong: var(--color-purple-10);
 
   /*
    * ═══════════════════════════════════════
-   * FOCUS RING
+   * DANGER — Radix red
    * ═══════════════════════════════════════
    */
-  --ring-color-focus: var(--accent);
-  --ring-color-focus-subtle: oklch(from var(--accent) l c h / 0.35);
+  --background-color-danger: var(--color-red-9);
+  --background-color-danger-subtle: var(--color-red-3);
+  --background-color-danger-strong: var(--color-red-8);
+  --background-color-danger-on: oklch(0.99 0 0);
+  --text-color-danger: var(--color-red-11);
+  --text-color-danger-on: oklch(0.99 0 0);
+  --border-color-danger: var(--color-red-7);
 
   /*
    * ═══════════════════════════════════════
-   * ACCENT
+   * WARN — Radix amber
    * ═══════════════════════════════════════
    */
-  --color-accent: var(--accent);
-  --color-accent-subtle: oklch(from var(--accent) l c h / 0.12);
-  --color-accent-strong: oklch(
-    from var(--accent) calc(l + 0.08 * var(--dir)) c h
-  );
-  --color-accent-on: oklch(0.99 0 0);
+  --background-color-warn: var(--color-amber-9);
+  --background-color-warn-subtle: var(--color-amber-3);
+  --background-color-warn-strong: var(--color-amber-10);
+  --background-color-warn-on: oklch(0.15 0 0);
+  --text-color-warn: var(--color-amber-11);
+  --text-color-warn-on: oklch(0.15 0 0);
+  --border-color-warn: var(--color-amber-8);
 
   /*
    * ═══════════════════════════════════════
-   * DANGER
+   * SUCCESS — Radix green
    * ═══════════════════════════════════════
    */
-  --color-danger: var(--danger);
-  --color-danger-subtle: oklch(from var(--danger) l c h / 0.12);
-  --color-danger-subtle-hover: oklch(from var(--danger) l c h / 0.18);
-  --color-danger-strong: oklch(
-    from var(--danger) calc(l + 0.08 * var(--dir)) c h
-  );
-  --color-danger-on: oklch(0.99 0 0);
+  --background-color-success: var(--color-green-9);
+  --background-color-success-subtle: var(--color-green-3);
+  --background-color-success-strong: var(--color-green-10);
+  --background-color-success-on: oklch(0.99 0 0);
+  --text-color-success: var(--color-green-11);
+  --text-color-success-on: oklch(0.99 0 0);
+  --border-color-success: var(--color-green-8);
 
   /*
    * ═══════════════════════════════════════
-   * WARN
+   * INVERSE
    * ═══════════════════════════════════════
    */
-  --color-warn: var(--warn);
-  --color-warn-subtle: oklch(from var(--warn) l c h / 0.12);
-  --color-warn-strong: oklch(from var(--warn) calc(l + 0.08 * var(--dir)) c h);
-  --color-warn-on: oklch(0.15 0 0);
+  --background-color-inverse: oklch(0.9 0.005 55);
 
   /*
    * ═══════════════════════════════════════
-   * SUCCESS
+   * SPECIAL
    * ═══════════════════════════════════════
    */
-  --color-success: var(--success);
-  --color-success-subtle: oklch(from var(--success) l c h / 0.12);
-  --color-success-strong: oklch(
-    from var(--success) calc(l + 0.08 * var(--dir)) c h
-  );
-  --color-success-on: oklch(0.99 0 0);
-
-  /*
-   * ═══════════════════════════════════════
-   * SPECIAL PURPOSE
-   * ═══════════════════════════════════════
-   */
-  --color-overlay: oklch(0 0 0 / 0.4);
-  --color-inverse: oklch(
-    from var(--base) calc(l + 0.8 * var(--dir) * var(--contrast)) c h
-  );
+  --background-color-overlay: oklch(0 0 0 / 0.4);
 
   /* Terminal (forced dark) */
-  --color-terminal: oklch(0.1 var(--seed-c) var(--seed-h));
-  --color-terminal-text: oklch(0.65 var(--seed-c) var(--seed-h));
-  --color-terminal-dim: oklch(0.45 var(--seed-c) var(--seed-h));
+  --color-terminal: oklch(0.1 0.005 55);
+  --color-terminal-text: oklch(0.65 0.005 55);
+  --color-terminal-dim: oklch(0.45 0.005 55);
+
+  /*
+   * ═══════════════════════════════════════
+   * SHADOWS
+   * ═══════════════════════════════════════
+   */
+  --inset-shadow-border: inset 0 0 0 1px oklch(1 0 0 / 0.06);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.15), 0 8px 8px -8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 2px 2px 0 rgba(0, 0, 0, 0.15), 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 4px 8px 0 rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 4px 8px -4px rgba(0, 0, 0, 0.15), 0 16px 24px -8px rgba(0, 0, 0, 0.2);
+  --shadow-2xl: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.15), 0 24px 32px -8px rgba(0, 0, 0, 0.25);
 
   /*
    * ═══════════════════════════════════════
@@ -258,145 +292,39 @@
 
   /*
    * ═══════════════════════════════════════
-   * SHADOWS
-   * ═══════════════════════════════════════
-   */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.04), 0 8px 8px -8px rgba(0, 0, 0, 0.04);
-  --shadow-md:
-    0 2px 2px 0 rgba(0, 0, 0, 0.04), 0 8px 16px -4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 1px 1px 0 rgba(0, 0, 0, 0.02), 0 4px 8px 0 rgba(0, 0, 0, 0.04);
-  --shadow-xl:
-    0 1px 1px 0 rgba(0, 0, 0, 0.02), 0 4px 8px -4px rgba(0, 0, 0, 0.04),
-    0 16px 24px -8px rgba(0, 0, 0, 0.06);
-  --shadow-2xl:
-    0 1px 1px 0 rgba(0, 0, 0, 0.02), 0 8px 16px -4px rgba(0, 0, 0, 0.04),
-    0 24px 32px -8px rgba(0, 0, 0, 0.06);
-
-  /*
-   * ═══════════════════════════════════════
    * ANIMATIONS
    * ═══════════════════════════════════════
    */
   --animate-overlayShow: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-contentShow: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
-  --animate-fade-in-from-top: fade-in-from-top 150ms
-    cubic-bezier(0.16, 1, 0.3, 1);
-  --animate-fade-in-from-bottom: fade-in-from-bottom 150ms
-    cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in-from-top: fade-in-from-top 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in-from-bottom: fade-in-from-bottom 150ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-fade-out: fade-out 250ms cubic-bezier(0.16, 1, 0.3, 1);
 
   @keyframes overlayShow {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   @keyframes contentShow {
-    from {
-      opacity: 0;
-      scale: 0.96;
-    }
-    to {
-      opacity: 1;
-      scale: 1;
-    }
+    from { opacity: 0; scale: 0.96; }
+    to { opacity: 1; scale: 1; }
   }
 
   @keyframes fade-in-from-top {
-    from {
-      opacity: 0;
-      transform: scale(0.96) translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+    from { opacity: 0; transform: scale(0.96) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
 
   @keyframes fade-in-from-bottom {
-    from {
-      opacity: 0;
-      transform: scale(0.96) translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+    from { opacity: 0; transform: scale(0.96) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
 
   @keyframes fade-out {
-    from {
-      opacity: 1;
-      scale: 1;
-    }
-    to {
-      opacity: 0;
-      scale: 0.98;
-    }
+    from { opacity: 1; scale: 1; }
+    to { opacity: 0; scale: 0.98; }
   }
-}
-
-/*
- * ═══════════════════════════════════════════════════════════════
- * BASE UTILITIES
- * ═══════════════════════════════════════════════════════════════
- */
-@utility bg-base-0 {
-  --base: var(--color-base-0);
-  --surface-1: var(--surface-step-on-0);
-  --surface-2: calc(var(--surface-step-on-0) * 2);
-  --surface-3: calc(var(--surface-step-on-0) * 3);
-  background-color: var(--base);
-}
-@utility bg-base-1 {
-  --base: var(--color-base-1);
-  --surface-1: var(--surface-step-on-1);
-  --surface-2: calc(var(--surface-step-on-1) * 2);
-  --surface-3: calc(var(--surface-step-on-1) * 3);
-  background-color: var(--base);
-}
-@utility bg-base-2 {
-  --base: var(--color-base-2);
-  --surface-1: var(--surface-step-on-2);
-  --surface-2: calc(var(--surface-step-on-2) * 2);
-  --surface-3: calc(var(--surface-step-on-2) * 3);
-  background-color: var(--base);
-}
-@utility bg-base-3 {
-  --base: var(--color-base-3);
-  --surface-1: var(--surface-step-on-3);
-  --surface-2: calc(var(--surface-step-on-3) * 2);
-  --surface-3: calc(var(--surface-step-on-3) * 3);
-  background-color: var(--base);
-}
-
-@utility bg-base {
-  background-color: var(--base);
-}
-
-/*
- * ═══════════════════════════════════════════════════════════════
- * SURFACE UTILITIES — Context-relative
- * ═══════════════════════════════════════════════════════════════
- */
-@utility bg-surface-1 {
-  background-color: oklch(
-    from var(--base) calc(l + var(--surface-1) * var(--dir)) c h
-  );
-}
-@utility bg-surface-2 {
-  background-color: oklch(
-    from var(--base) calc(l + var(--surface-2) * var(--dir)) c h
-  );
-}
-@utility bg-surface-3 {
-  background-color: oklch(
-    from var(--base) calc(l + var(--surface-3) * var(--dir)) c h
-  );
 }
 
 /* base reset */

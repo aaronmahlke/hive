@@ -280,7 +280,7 @@ const statusColors: Record<string, string> = {
     </div>
 
     <!-- Actions -->
-    <div v-if="files.length || ahead" class="border-edge flex flex-col gap-1.5 border-t p-2">
+    <div v-if="files.length || ahead" class="border-neutral flex flex-col gap-1.5 border-t p-2">
       <div v-if="commentCount && !showCommitForm" class="text-copy text-tertiary flex items-center gap-1 px-0.5">
         <ChatBubbleLeftIcon class="size-3" />
         {{ commentCount }} comment{{ commentCount !== 1 ? "s" : "" }} pending
@@ -309,7 +309,7 @@ const statusColors: Record<string, string> = {
       <div v-if="showCommitForm" class="flex flex-col gap-1.5">
         <textarea
           v-model="commitMessageInput"
-          class="text-copy text-primary bg-surface-1 border-edge w-full resize-none rounded-md border p-2 outline-none focus:border-edge-strong"
+          class="text-copy text-primary bg-subtle border-neutral w-full resize-none rounded-md border p-2 outline-none focus:border-neutral-strong"
           rows="4"
           placeholder="Commit message..."
           :disabled="committing"

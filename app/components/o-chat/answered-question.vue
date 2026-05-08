@@ -27,8 +27,8 @@ const summary = computed(() => {
 
 <template>
   <div
-    class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-surface-1"
-    :class="expanded ? 'bg-surface-1' : ''"
+    class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-subtle"
+    :class="expanded ? 'bg-subtle' : ''"
     @click="expanded = !expanded"
   >
     <QuestionMarkCircleIcon class="text-tertiary size-3.5 shrink-0" />
@@ -38,11 +38,11 @@ const summary = computed(() => {
   </div>
 
   <div v-if="expanded" class="mb-1 mt-0.5">
-    <div class="bg-surface-1 rounded-md px-3 py-2">
+    <div class="bg-subtle rounded-md px-3 py-2">
       <div
         v-for="(q, idx) in data.questions"
         :key="idx"
-        :class="idx > 0 ? 'border-edge mt-2 border-t pt-2' : ''"
+        :class="idx > 0 ? 'border-neutral mt-2 border-t pt-2' : ''"
       >
         <p class="text-copy text-tertiary mb-0.5">{{ q.header || q.question }}</p>
         <div class="flex items-center gap-1.5">

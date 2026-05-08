@@ -176,7 +176,7 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
   <div class="py-5">
     <!-- User message -->
     <div class="pb-3">
-      <div class="bg-surface-1 inline-block max-w-full rounded-xl px-3 py-2.5">
+      <div class="bg-subtle inline-block max-w-full rounded-xl px-3 py-2.5">
         <p v-if="userText" class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
         <div v-if="userImages.length" class="flex flex-wrap gap-2" :class="userText ? 'mt-2' : ''">
           <button

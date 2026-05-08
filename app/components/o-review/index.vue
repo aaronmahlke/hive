@@ -76,7 +76,7 @@ async function addComment(content: string) {
           :class="{
             'bg-success-subtle text-success': review.status === 'approved',
             'bg-warn-subtle text-warn': review.status === 'user_review',
-            'bg-surface-1 text-secondary': review.status === 'agent_review',
+            'bg-subtle text-secondary': review.status === 'agent_review',
           }"
         >
           {{ review.status.replace(/_/g, " ") }}
@@ -86,7 +86,7 @@ async function addComment(content: string) {
 
     <div class="flex min-h-0 flex-1">
       <!-- File tree sidebar -->
-      <div class="border-edge w-56 shrink-0 overflow-auto border-r p-1.5">
+      <div class="border-neutral w-56 shrink-0 overflow-auto border-r p-1.5">
         <p class="text-copy text-tertiary mb-1 px-2 font-medium uppercase">
           Changed Files ({{ review.changedFiles?.length || 0 }})
         </p>
@@ -109,7 +109,7 @@ async function addComment(content: string) {
     </div>
 
     <!-- Comments + actions -->
-    <div class="border-edge flex items-center justify-between border-t p-3">
+    <div class="border-neutral flex items-center justify-between border-t p-3">
       <div class="flex-1">
         <!-- Agent summary -->
         <p v-if="review.summary" class="text-copy text-secondary line-clamp-2">

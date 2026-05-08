@@ -26,7 +26,7 @@ const open = defineModel<boolean>();
         :side="side"
         :align="align"
         :side-offset="sideOffset"
-        class="o-popover-content bg-base-3 border-edge data-[state=closed]:animate-fade-out z-50 min-w-[8rem] overflow-hidden rounded-lg border shadow-lg outline-none"
+        class="o-popover-content bg-base-2 border-neutral data-[state=closed]:animate-fade-out z-50 min-w-[8rem] overflow-hidden rounded-lg border shadow-lg outline-none"
       >
         <slot />
       </PopoverContent>

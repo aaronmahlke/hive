@@ -142,7 +142,7 @@ watch(() => content, async (val) => {
 
 .o-markdown pre {
   background: var(--color-base-0);
-  border: 1px solid var(--border-color-edge);
+  border: 1px solid var(--border-color-neutral);
   border-radius: 0.625rem;
   padding: 0.875rem 1rem;
   margin: 1em 0;
@@ -162,7 +162,7 @@ watch(() => content, async (val) => {
 }
 
 .o-markdown code {
-  background: oklch(from var(--base) calc(l + var(--surface-1) * var(--dir)) c h);
+  background: var(--background-color-subtle);
   padding: 0.15em 0.4em;
   border-radius: 0.3em;
   font-size: 0.84em;
@@ -203,7 +203,7 @@ watch(() => content, async (val) => {
 /* ── Blockquotes ── */
 
 .o-markdown blockquote {
-  border-left: 3px solid var(--border-color-edge-strong);
+  border-left: 3px solid var(--border-color-neutral-strong);
   padding: 0.125em 0 0.125em 1em;
   margin: 0.75em 0;
   color: var(--text-color-secondary);
@@ -216,22 +216,22 @@ watch(() => content, async (val) => {
 /* ── Links ── */
 
 .o-markdown a {
-  color: var(--color-accent);
+  color: var(--text-color-accent);
   text-decoration: underline;
   text-underline-offset: 2px;
-  text-decoration-color: oklch(from var(--color-accent) l c h / 0.3);
+  text-decoration-color: oklch(from var(--text-color-accent) l c h / 0.3);
   transition: text-decoration-color 0.15s;
 }
 
 .o-markdown a:hover {
-  text-decoration-color: var(--color-accent);
+  text-decoration-color: var(--text-color-accent);
 }
 
 /* ── Horizontal rule ── */
 
 .o-markdown hr {
   border: none;
-  border-top: 1px solid var(--border-color-edge);
+  border-top: 1px solid var(--border-color-neutral);
   margin: 1.5em 0;
 }
 
@@ -247,7 +247,7 @@ watch(() => content, async (val) => {
 
 .o-markdown th,
 .o-markdown td {
-  border: 1px solid var(--border-color-edge);
+  border: 1px solid var(--border-color-neutral);
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
@@ -258,11 +258,11 @@ watch(() => content, async (val) => {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--text-color-secondary);
-  background: oklch(from var(--base) calc(l + var(--surface-1) * var(--dir)) c h);
+  background: var(--background-color-subtle);
 }
 
 .o-markdown tr:hover td {
-  background: oklch(from var(--base) calc(l + var(--surface-1) * var(--dir) * 0.5) c h);
+  background: var(--background-color-subtle);
 }
 
 /* ── Strong / Em ── */

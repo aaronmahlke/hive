@@ -38,16 +38,16 @@ const hasTrailing = computed(() => !!trailing || !!slots.trailing);
 
 <template>
   <div
-    class="bg-surface-1 border-edge text-primary text-copy has-[:focus]:bg-base has-[:focus]:border-edge-strong flex h-8 overflow-hidden rounded-md border leading-none transition-all outline-none"
+    class="bg-subtle border-neutral text-primary text-copy has-[:focus]:bg-base-1 has-[:focus]:border-neutral-strong flex h-8 overflow-hidden rounded-md border leading-none transition-all outline-none"
     :class="[
       disabled
-        ? 'bg-surface-2 cursor-not-allowed opacity-50'
-        : 'hover:border-edge-strong',
+        ? 'bg-subtle cursor-not-allowed opacity-50'
+        : 'hover:border-neutral-strong',
     ]"
   >
     <div
       v-if="$slots.leading || leading"
-      class="border-edge flex items-center px-2"
+      class="border-neutral flex items-center px-2"
     >
       <template v-if="leading">{{ leading }}</template>
       <template v-else><slot name="leading" /></template>
@@ -70,7 +70,7 @@ const hasTrailing = computed(() => !!trailing || !!slots.trailing);
     />
     <div
       v-if="$slots.trailing || trailing"
-      class="border-edge flex items-center px-2"
+      class="border-neutral flex items-center px-2"
     >
       <template v-if="trailing">{{ trailing }}</template>
       <template v-else><slot name="trailing" /></template>

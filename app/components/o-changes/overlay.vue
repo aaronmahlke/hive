@@ -75,14 +75,14 @@ const totalDeletions = computed(() => {
 <template>
   <div class="bg-base-1 absolute inset-0 z-10 flex flex-col overflow-hidden">
     <!-- File header -->
-    <div class="border-edge flex h-10 shrink-0 items-center justify-between border-b px-3">
+    <div class="border-neutral flex h-10 shrink-0 items-center justify-between border-b px-3">
       <div class="flex min-w-0 items-center gap-2">
         <span class="text-copy text-primary truncate font-mono">
           {{ props.filePath }}
         </span>
         <span
           v-if="props.diffMode && props.diffMode !== 'combined'"
-          class="text-copy text-tertiary shrink-0 rounded bg-surface-1 px-1.5 py-0.5"
+          class="text-copy text-tertiary shrink-0 rounded bg-subtle px-1.5 py-0.5"
         >
           {{ props.diffMode }}
         </span>
@@ -97,12 +97,12 @@ const totalDeletions = computed(() => {
         <!-- Viewed toggle -->
         <button
           type="button"
-          class="bg-surface-1 text-primary hover:bg-surface-2 border-edge flex h-7 items-center gap-2 rounded-md border px-3 text-copy shadow-xs outline-none active:bg-surface-3"
+          class="bg-subtle text-primary hover:bg-subtle border-neutral flex h-7 items-center gap-2 rounded-md border px-3 text-copy shadow-xs outline-none active:bg-subtle"
           @click="emit('toggle-viewed')"
         >
            <div
             class="grid size-3.5 shrink-0 place-items-center rounded border"
-            :class="props.viewed ? 'bg-accent border-accent' : 'border-edge-strong'"
+            :class="props.viewed ? 'bg-accent border-accent' : 'border-neutral-strong'"
           >
             <CheckIcon v-if="props.viewed" class="size-2.5 text-white" />
           </div>

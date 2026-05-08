@@ -31,7 +31,7 @@ const statusIcon: Record<string, any> = {
 };
 
 const statusClass: Record<string, string> = {
-  pending: "border-edge bg-base-3",
+  pending: "border-neutral bg-base-2",
   in_progress: "text-primary",
   completed: "text-success",
   cancelled: "text-tertiary",
@@ -40,8 +40,8 @@ const statusClass: Record<string, string> = {
 
 <template>
   <div
-    class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-surface-1"
-    :class="expanded ? 'bg-surface-1' : ''"
+    class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-subtle"
+    :class="expanded ? 'bg-subtle' : ''"
     @click="expanded = !expanded"
   >
     <ClipboardDocumentListIcon class="text-tertiary size-3.5 shrink-0" />

@@ -196,7 +196,7 @@ defineExpose({ focus: focusInput });
       <div class="flex items-center gap-1">
         <button
           type="button"
-          class="text-copy hover:bg-surface-3 flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
+          class="text-copy hover:bg-subtle flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
           :class="mode === 'plan' ? 'text-accent' : 'text-tertiary'"
           @click="toggleMode"
         >

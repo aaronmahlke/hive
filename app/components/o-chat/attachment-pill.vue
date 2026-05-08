@@ -15,7 +15,7 @@ const emit = defineEmits<Emits>();
 </script>
 
 <template>
-  <div class="bg-surface-1 border-edge group/pill relative inline-flex items-center gap-1.5 rounded-lg border py-1 pr-1.5 pl-1">
+  <div class="bg-subtle border-neutral group/pill relative inline-flex items-center gap-1.5 rounded-lg border py-1 pr-1.5 pl-1">
     <img
       :src="preview"
       :alt="name"

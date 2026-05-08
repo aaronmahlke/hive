@@ -29,14 +29,14 @@ onMounted(() => nextTick(() => textareaRef.value?.focus()));
 </script>
 
 <template>
-  <div class="bg-base-1 border-edge-strong my-1 mx-1.5 rounded-md border p-2.5 text-copy">
+  <div class="bg-base-1 border-neutral-strong my-1 mx-1.5 rounded-md border p-2.5 text-copy">
     <p class="text-tertiary mb-2 text-copy">{{ lineLabel }}</p>
     <textarea
       ref="textareaRef"
       v-model="text"
       rows="3"
       placeholder="Add review feedback..."
-      class="text-primary bg-base-0 border-edge w-full resize-none rounded-md border p-2 text-copy outline-none focus:border-edge-strong"
+      class="text-primary bg-base-0 border-neutral w-full resize-none rounded-md border p-2 text-copy outline-none focus:border-neutral-strong"
       @keydown.enter.meta.prevent="submit"
       @keydown.escape.stop.prevent="emit('cancel')"
     />
@@ -48,9 +48,9 @@ onMounted(() => nextTick(() => textareaRef.value?.focus()));
         Cancel
       </button>
       <button
-        class="text-primary bg-surface-1 border-edge rounded-md border px-2.5 py-1 text-copy font-medium outline-none"
+        class="text-primary bg-subtle border-neutral rounded-md border px-2.5 py-1 text-copy font-medium outline-none"
         :disabled="!text.trim()"
-        :class="text.trim() ? 'hover:bg-surface-2' : 'opacity-40'"
+        :class="text.trim() ? 'hover:bg-subtle' : 'opacity-40'"
         @click="submit"
       >
         Comment

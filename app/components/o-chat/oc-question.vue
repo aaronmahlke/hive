@@ -143,10 +143,10 @@ function getAnswerPreview(qIdx: number): string {
         type="button"
         class="text-copy flex items-center gap-1 rounded px-2 py-1 transition-colors"
         :class="idx === activeTab
-          ? 'bg-surface-1 text-primary font-medium'
+          ? 'bg-subtle text-primary font-medium'
           : getAnswerPreview(idx)
-            ? 'text-success hover:bg-surface-1/50'
-            : 'text-tertiary hover:bg-surface-1/50'"
+            ? 'text-success hover:bg-subtle/50'
+            : 'text-tertiary hover:bg-subtle/50'"
         @click="goToTab(idx)"
       >
         <CheckIcon v-if="getAnswerPreview(idx) && idx !== activeTab" class="size-3" />
@@ -169,12 +169,12 @@ function getAnswerPreview(qIdx: number): string {
             class="text-copy flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors"
             :class="selections[activeTab].includes(opt.label)
               ? 'bg-accent/10 border-accent text-primary'
-              : 'bg-base-3 border-edge text-primary hover:bg-surface-1'"
+              : 'bg-base-2 border-neutral text-primary hover:bg-subtle'"
             @click="selectOption(activeTab, opt.label)"
           >
             <span
               v-if="currentQuestion.multiple"
-              class="border-edge grid size-3.5 shrink-0 place-items-center rounded border"
+              class="border-neutral grid size-3.5 shrink-0 place-items-center rounded border"
               :class="selections[activeTab].includes(opt.label) ? 'bg-accent border-accent' : ''"
             >
               <CheckIcon v-if="selections[activeTab].includes(opt.label)" class="text-accent-on size-2.5" />
@@ -192,7 +192,7 @@ function getAnswerPreview(qIdx: number): string {
             class="text-copy flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors"
             :class="showCustomInput[activeTab]
               ? 'bg-accent/10 border-accent text-primary'
-              : 'bg-base-3 border-edge text-tertiary hover:bg-surface-1 hover:text-primary'"
+              : 'bg-base-2 border-neutral text-tertiary hover:bg-subtle hover:text-primary'"
             @click="activateCustom(activeTab)"
           >
             Type your own answer
@@ -207,7 +207,7 @@ function getAnswerPreview(qIdx: number): string {
           <input
             :data-custom-input="activeTab"
             v-model="customInputs[activeTab]"
-            class="text-copy text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 rounded-md border px-2.5 outline-none"
+            class="text-copy text-primary placeholder:text-tertiary bg-base-2 border-neutral h-7 min-w-0 flex-1 rounded-md border px-2.5 outline-none"
             placeholder="Type your answer..."
             @keydown.enter.prevent="submitCustom(activeTab)"
             @keydown.escape.prevent="emit('reject', request.id)"

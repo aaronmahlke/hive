@@ -53,7 +53,7 @@ const label = computed(() => {
           </button>
           <button
             type="button"
-            class="bg-base-3 border-edge text-copy text-primary hover:bg-surface-1 rounded-md border px-2.5 py-1 transition-colors"
+            class="bg-base-2 border-neutral text-copy text-primary hover:bg-subtle rounded-md border px-2.5 py-1 transition-colors"
             @click="emit('reply', permission.id, 'always', permission.sessionID)"
           >
             Always

@@ -91,10 +91,10 @@ const editInput = computed(() => part.state?.input || {});
 
 <template>
   <div
-    class="group/tc flex w-full items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-surface-1"
+    class="group/tc flex w-full items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-subtle"
     :class="[
       isRead ? '' : 'cursor-pointer',
-      expanded ? 'bg-surface-1' : '',
+      expanded ? 'bg-subtle' : '',
     ]"
     @click="toggle"
   >
