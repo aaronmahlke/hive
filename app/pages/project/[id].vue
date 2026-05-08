@@ -141,10 +141,12 @@ const isSelectedFileViewed = computed(() =>
       </div>
 
       <aside
-        class="border-neutral shrink-0 transition-[width] duration-200 ease-out overflow-hidden"
-        :class="rightCollapsed ? 'w-0 border-l-0' : 'w-52 border-l'"
+        class="shrink-0 overflow-hidden transition-[width] duration-200 ease-out"
+        :class="rightCollapsed ? 'w-0' : 'w-52'"
       >
-        <OChangesPanel />
+        <div class="w-52 h-full border-l border-neutral">
+          <OChangesPanel />
+        </div>
       </aside>
     </div>
 
