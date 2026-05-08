@@ -135,13 +135,19 @@ const duration = computed(() => {
 function toggle() {
   expanded.value = !expanded.value;
 }
+
+function navigateToChild() {
+  if (childSessionId.value) {
+    store.enterChildSession(connectionKey, childSessionId.value);
+  }
+}
 </script>
 
 <template>
   <div
     class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-surface-1"
     :class="expanded ? 'bg-surface-1' : ''"
-    @click="toggle"
+    @click="childSessionId ? navigateToChild() : toggle()"
   >
     <CpuChipIcon
       class="size-3.5 shrink-0"
@@ -165,19 +171,19 @@ function toggle() {
 
   <!-- Expanded: child session activity -->
   <div v-if="expanded && childSessionId" class="mb-1 mt-0.5">
-    <!-- Child permissions -->
+    <!-- Child permission (one at a time) -->
     <OChatPermission
-      v-for="p in childPermissions"
-      :key="p.id"
-      :permission="p"
+      v-if="childPermissions.length"
+      :key="childPermissions[0].id"
+      :permission="childPermissions[0]"
       @reply="(id, reply, sid) => store.replyPermission(connectionKey, id, reply, sid)"
     />
 
-    <!-- Child questions -->
+    <!-- Child question (one at a time) -->
     <OChatOcQuestion
-      v-for="q in childQuestions"
-      :key="q.id"
-      :request="q"
+      v-if="childQuestions.length"
+      :key="childQuestions[0].id"
+      :request="childQuestions[0]"
       @reply="(id, answers) => store.replyQuestion(connectionKey, id, answers)"
       @reject="(id) => store.rejectQuestion(connectionKey, id)"
     />

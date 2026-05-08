@@ -9,7 +9,16 @@ type Props = {
 const { projectId, placeholder } = defineProps<Props>();
 
 const store = useHiveStore();
-const { turns, messages, isWorking, pendingQuestions, pendingPermissions, pendingOcQuestions, answeredQuestions, modelName, connected, initializing } = store.project(projectId);
+const { turns, messages, isWorking, pendingQuestions, pendingPermissions, pendingOcQuestions, answeredQuestions, modelName, connected, initializing, sessionId } = store.project(projectId);
+
+// Only show permissions/questions for the active session in the prompt area.
+// Child session permissions are shown inline in the task tool call component.
+const activePermissions = computed(() =>
+  pendingPermissions.value.filter((p) => p.sessionID === sessionId.value),
+);
+const activeOcQuestions = computed(() =>
+  pendingOcQuestions.value.filter((q) => q.sessionID === sessionId.value),
+);
 
 const storageKey = computed(() => `hive:chat:${projectId}`);
 const mode = useLocalStorage<Mode>(`${storageKey.value}:mode`, "build");
@@ -158,14 +167,14 @@ watch(initializing, (val, old) => {
       <div class="mx-auto max-w-3xl px-3 pb-3">
         <div class="bg-base-2 rounded-[14px] p-0.5">
           <OChatPermission
-            v-for="p in pendingPermissions"
+            v-for="p in activePermissions"
             :key="p.id"
             :permission="p"
             @reply="handleReplyPermission"
           />
 
           <OChatOcQuestion
-            v-for="q in pendingOcQuestions"
+            v-for="q in activeOcQuestions"
             :key="q.id"
             :request="q"
             @reply="handleReplyOcQuestion"
@@ -180,7 +189,7 @@ watch(initializing, (val, old) => {
           />
 
           <div
-            v-if="(pendingPermissions.length || pendingOcQuestions.length || pendingQuestions.length) && messageQueue.length"
+            v-if="(activePermissions.length || activeOcQuestions.length || pendingQuestions.length) && messageQueue.length"
             class="border-edge mx-3 border-t"
           />
 

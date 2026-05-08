@@ -78,6 +78,8 @@ type ConnectionState = {
   error: string | null;
   /** Status per session ID — tracks working state of child sessions */
   sessionStatus: Record<string, { type: string }>;
+  /** Stack of parent session IDs for navigating back from sub-sessions */
+  sessionStack: string[];
 };
 
 type ConnectionWs = {
@@ -139,6 +141,7 @@ function ensureState(key: string): ConnectionState {
       initializing: false,
       error: null,
       sessionStatus: {},
+      sessionStack: [],
     };
   }
   getMessages(key);
@@ -605,11 +608,57 @@ export function useHiveStore() {
     s.pendingPermissions = [];
     s.pendingOcQuestions = [];
     s.answeredQuestions = [];
+    s.sessionStack = [];
 
     // Tell the server to switch — no disconnect needed
     wsSend(key, {
       type: "switch_session",
       data: { sessionId: opencodeSessionId },
+    });
+  }
+
+  /** Navigate into a child/sub-agent session */
+  function enterChildSession(key: string, childSessionId: string) {
+    const s = ensureState(key);
+    if (!s.sessionId) return;
+
+    // Push current session onto the stack
+    s.sessionStack = [...s.sessionStack, s.sessionId];
+
+    // Switch to the child session
+    const msgs = getMessages(key);
+    msgs.value = [];
+    prevTurnsMap.delete(key);
+
+    s.sessionId = childSessionId;
+    s.isWorking = s.sessionStatus[childSessionId]?.type !== "idle" && !!s.sessionStatus[childSessionId];
+    s.answeredQuestions = [];
+
+    wsSend(key, {
+      type: "switch_session",
+      data: { sessionId: childSessionId },
+    });
+  }
+
+  /** Navigate back to the parent session */
+  function exitChildSession(key: string) {
+    const s = ensureState(key);
+    if (!s.sessionStack.length) return;
+
+    const parentSessionId = s.sessionStack[s.sessionStack.length - 1];
+    s.sessionStack = s.sessionStack.slice(0, -1);
+
+    const msgs = getMessages(key);
+    msgs.value = [];
+    prevTurnsMap.delete(key);
+
+    s.sessionId = parentSessionId;
+    s.isWorking = s.sessionStatus[parentSessionId]?.type !== "idle" && !!s.sessionStatus[parentSessionId];
+    s.answeredQuestions = [];
+
+    wsSend(key, {
+      type: "switch_session",
+      data: { sessionId: parentSessionId },
     });
   }
 
@@ -648,6 +697,8 @@ export function useHiveStore() {
       port: computed(() => state[key]?.port ?? null),
       sessionId: computed(() => state[key]?.sessionId ?? null),
       sessionStatus: computed(() => state[key]?.sessionStatus ?? {}),
+      sessionStack: computed(() => state[key]?.sessionStack ?? []),
+      isInChildSession: computed(() => (state[key]?.sessionStack?.length ?? 0) > 0),
     };
   }
 
@@ -786,6 +837,8 @@ export function useHiveStore() {
     replyQuestion,
     rejectQuestion,
     switchSession,
+    enterChildSession,
+    exitChildSession,
     fetchSessionMessages,
     childMessages,
     isSessionWorking,
