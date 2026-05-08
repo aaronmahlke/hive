@@ -136,6 +136,7 @@
   --color-base-0: var(--color-taupe-1);
   --color-base-1: var(--color-taupe-2);
   --color-base-2: var(--color-taupe-3);
+  --color-base-3: var(--color-taupe-4);
 
   /*
    * ═══════════════════════════════════════
@@ -300,6 +301,7 @@
   --animate-fade-in-from-top: fade-in-from-top 150ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-fade-in-from-bottom: fade-in-from-bottom 150ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-fade-out: fade-out 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-message-in: message-in 300ms cubic-bezier(0.16, 1, 0.3, 1);
 
   @keyframes overlayShow {
     from { opacity: 0; }
@@ -324,6 +326,17 @@
   @keyframes fade-out {
     from { opacity: 1; scale: 1; }
     to { opacity: 0; scale: 0.98; }
+  }
+
+  @keyframes message-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 

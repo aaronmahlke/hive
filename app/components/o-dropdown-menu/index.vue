@@ -26,7 +26,7 @@ const open = defineModel<boolean>();
         :side
         :align
         :side-offset="sideOffset"
-        class="o-dropdown-menu-content bg-base-2 border-neutral data-[state=closed]:animate-fade-out z-50 min-w-[10rem] overflow-hidden rounded-lg border p-1 shadow-lg"
+        class="o-dropdown-menu-content bg-base-3 border-neutral data-[state=closed]:animate-fade-out z-50 min-w-[10rem] overflow-hidden rounded-lg border p-1 shadow-lg"
       >
         <slot />
       </DropdownMenuContent>

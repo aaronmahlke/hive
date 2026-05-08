@@ -60,6 +60,9 @@ type RenderBlock =
 const { userMessage, assistantMessages, isWorking = false, answeredQuestions = [] } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+// Only animate optimistic (just-sent) messages
+const shouldAnimate = userMessage.info.id.startsWith("optimistic-");
+
 const userText = computed(() => {
   return userMessage.parts
     .filter((p) => p.type === "text" && p.text)
@@ -183,7 +186,7 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
       @revert="emit('revert', userMessage.info.id)"
       @fork="emit('fork', userMessage.info.id)"
     >
-    <div class="pb-3">
+    <div class="pb-3" :class="shouldAnimate ? 'animate-message-in' : ''">
       <div class="bg-subtle inline-block max-w-full rounded-xl px-3 py-2.5">
         <p v-if="userText" class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
         <div v-if="userImages.length" class="flex flex-wrap gap-2" :class="userText ? 'mt-2' : ''">
@@ -212,17 +215,6 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
           <OLoader size="xs" class="text-primary" />
         </span>
         <span class="text-copy text-secondary">{{ statusText }}</span>
-        <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
-          · {{ formattedDuration }}
-        </span>
-        <button
-          type="button"
-          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center rounded transition-colors"
-          title="Stop (Escape)"
-          @click.stop="emit('abort')"
-        >
-          <StopIcon class="size-3" />
-        </button>
       </div>
     </div>
 
@@ -265,17 +257,6 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
           <OLoader size="xs" class="text-primary" />
         </span>
         <span class="text-copy text-secondary">{{ statusText }}</span>
-        <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
-          · {{ formattedDuration }}
-        </span>
-        <button
-          type="button"
-          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center rounded transition-colors"
-          title="Stop (Escape)"
-          @click.stop="emit('abort')"
-        >
-          <StopIcon class="size-3" />
-        </button>
       </div>
     </div>
 

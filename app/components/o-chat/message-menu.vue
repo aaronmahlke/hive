@@ -29,7 +29,7 @@ const emit = defineEmits<Emits>();
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent
-        class="bg-base-2 border-neutral z-50 min-w-[10rem] overflow-hidden rounded-lg border p-1 shadow-lg"
+        class="bg-base-3 border-neutral z-50 min-w-[10rem] overflow-hidden rounded-lg border p-1 shadow-lg"
       >
         <ContextMenuItem
           class="group/item relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-copy text-primary outline-none select-none"

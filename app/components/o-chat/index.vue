@@ -212,7 +212,7 @@ watch(initializing, (val, old) => {
 
     <div class="relative z-10 shrink-0 -mt-4">
       <div class="mx-auto max-w-3xl px-3 pb-3">
-        <div class="bg-base-1 rounded-[14px] p-0.5">
+        <div class="bg-base-2 rounded-[14px] p-1">
           <OChatPermission
             v-for="p in activePermissions"
             :key="p.id"
@@ -245,7 +245,7 @@ watch(initializing, (val, old) => {
             @remove="removeFromQueue"
           />
 
-          <div class="bg-base-2 border-neutral rounded-xl border">
+          <div class="bg-base-3 border-neutral rounded-xl border">
             <OChatInput
               v-model:draft="draft"
               :disabled="!connected"

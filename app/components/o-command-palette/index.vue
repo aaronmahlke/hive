@@ -82,7 +82,7 @@ const placeholder = computed(() => {
         class="fixed top-[20%] left-[50%] z-50 w-[90vw] max-w-[32rem] translate-x-[-50%] rounded-xl shadow-2xl outline-none data-[state=open]:animate-[contentShow_150ms_cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:animate-[fade-out_100ms_ease]"
         @escape-key-down.prevent
       >
-        <div class="bg-base-2 border-neutral overflow-hidden rounded-xl border">
+        <div class="bg-base-3 border-neutral overflow-hidden rounded-xl border">
           <ComboboxRoot
             :open="true"
             :model-value="''"
@@ -151,7 +151,7 @@ const placeholder = computed(() => {
                     />
                     <span
                       v-if="cmd.shortcut"
-                      class="bg-base-2 border-neutral text-copy text-tertiary shrink-0 rounded border px-1 py-0.5 font-mono"
+                      class="bg-base-3 border-neutral text-copy text-tertiary shrink-0 rounded border px-1 py-0.5 font-mono"
                     >
                       {{ cmd.shortcut }}
                     </span>

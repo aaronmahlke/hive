@@ -48,7 +48,7 @@ if (import.meta.client) {
     >
       <!-- Sliding indicator -->
       <div
-        class="absolute top-0.5 bottom-0.5 rounded-[6px] bg-base-2 shadow-sm transition-all duration-200 ease-out"
+        class="absolute top-0.5 bottom-0.5 rounded-[6px] bg-subtle shadow-sm transition-all duration-200 ease-out"
         :style="indicatorStyle"
       />
 

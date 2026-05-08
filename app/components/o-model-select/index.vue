@@ -163,7 +163,7 @@ watch(open, (v, old) => {
       <ComboboxContent
         :side-offset="4"
         position="popper"
-        class="model-select-content bg-base-2 border-neutral data-[state=closed]:animate-fade-out z-50 w-64 overflow-hidden rounded-lg border shadow-lg"
+        class="model-select-content bg-base-3 border-neutral data-[state=closed]:animate-fade-out z-50 w-64 overflow-hidden rounded-lg border shadow-lg"
       >
         <ComboboxViewport class="p-0.5">
           <ComboboxInput
