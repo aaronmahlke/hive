@@ -1,23 +1,25 @@
 @import "tailwindcss";
 @import "./diff.css";
 
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 /*
  * ═══════════════════════════════════════════════════════════════
  * Color System — Carrot-inspired OKLCH tokens
  *
- * Dark mode only. 12-step taupe neutral scale (hue 55, chroma 0.005).
- * 3 background layers, 1 interactive surface, 2 border levels.
+ * Light mode by default. Dark mode via [data-theme="dark"].
+ * 12-step taupe neutral scale (hue 55, chroma 0.005).
  * Purple accent (hue 250). Radix-based intent colors.
  * ═══════════════════════════════════════════════════════════════
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 /*
  * ═══════════════════════════════════════════════════════════════
- * Taupe Scale — 12 steps (dark mode)
+ * Taupe Scale — 12 steps (light mode)
  *
  * Radix conventions:
  *   1-2:   Backgrounds
@@ -29,6 +31,21 @@
  * ═══════════════════════════════════════════════════════════════
  */
 :root {
+  --color-taupe-1: oklch(0.994 0.005 55);
+  --color-taupe-2: oklch(0.982 0.005 55);
+  --color-taupe-3: oklch(0.956 0.005 55);
+  --color-taupe-4: oklch(0.931 0.005 55);
+  --color-taupe-5: oklch(0.91 0.005 55);
+  --color-taupe-6: oklch(0.885 0.005 55);
+  --color-taupe-7: oklch(0.851 0.005 55);
+  --color-taupe-8: oklch(0.791 0.005 55);
+  --color-taupe-9: oklch(0.641 0.005 55);
+  --color-taupe-10: oklch(0.605 0.005 55);
+  --color-taupe-11: oklch(0.498 0.005 55);
+  --color-taupe-12: oklch(0.243 0.005 55);
+}
+
+[data-theme="dark"] {
   --color-taupe-1: oklch(0.177 0.005 55);
   --color-taupe-2: oklch(0.213 0.005 55);
   --color-taupe-3: oklch(0.252 0.005 55);
@@ -45,10 +62,25 @@
 
 /*
  * ═══════════════════════════════════════════════════════════════
- * Purple Accent Scale — 12 steps (dark mode)
+ * Purple Accent Scale — 12 steps (light mode)
  * ═══════════════════════════════════════════════════════════════
  */
 :root {
+  --color-purple-1: oklch(0.98 0.005 270);
+  --color-purple-2: oklch(0.96 0.01 270);
+  --color-purple-3: oklch(0.93 0.02 270);
+  --color-purple-4: oklch(0.90 0.03 270);
+  --color-purple-5: oklch(0.86 0.05 270);
+  --color-purple-6: oklch(0.82 0.07 270);
+  --color-purple-7: oklch(0.76 0.09 270);
+  --color-purple-8: oklch(0.68 0.12 270);
+  --color-purple-9: oklch(0.65 0.18 270);
+  --color-purple-10: oklch(0.58 0.18 270);
+  --color-purple-11: oklch(0.42 0.15 270);
+  --color-purple-12: oklch(0.20 0.06 270);
+}
+
+[data-theme="dark"] {
   --color-purple-1: oklch(0.18 0.02 270);
   --color-purple-2: oklch(0.21 0.03 270);
   --color-purple-3: oklch(0.27 0.06 270);
@@ -65,10 +97,25 @@
 
 /*
  * ═══════════════════════════════════════════════════════════════
- * Red Scale — Based on Radix tomato (dark mode)
+ * Red Scale — Based on Radix tomato (light mode)
  * ═══════════════════════════════════════════════════════════════
  */
 :root {
+  --color-red-1: #fffcfc;
+  --color-red-2: #fff8f7;
+  --color-red-3: #feebe7;
+  --color-red-4: #ffdcd3;
+  --color-red-5: #ffcdc2;
+  --color-red-6: #fdbdaf;
+  --color-red-7: #f5a898;
+  --color-red-8: #ec8e7b;
+  --color-red-9: #e54d2e;
+  --color-red-10: #dd4425;
+  --color-red-11: #d13415;
+  --color-red-12: #5c271f;
+}
+
+[data-theme="dark"] {
   --color-red-1: #181111;
   --color-red-2: #1f1513;
   --color-red-3: #391714;
@@ -85,10 +132,25 @@
 
 /*
  * ═══════════════════════════════════════════════════════════════
- * Amber Scale — Based on Radix amber (dark mode)
+ * Amber Scale — Based on Radix amber (light mode)
  * ═══════════════════════════════════════════════════════════════
  */
 :root {
+  --color-amber-1: #fefdfb;
+  --color-amber-2: #fefbe9;
+  --color-amber-3: #fff7c2;
+  --color-amber-4: #ffee9c;
+  --color-amber-5: #fbe577;
+  --color-amber-6: #f3d673;
+  --color-amber-7: #e9c162;
+  --color-amber-8: #e2a336;
+  --color-amber-9: #ffc53d;
+  --color-amber-10: #ffba18;
+  --color-amber-11: #ab6400;
+  --color-amber-12: #4f3422;
+}
+
+[data-theme="dark"] {
   --color-amber-1: #16120c;
   --color-amber-2: #1d180f;
   --color-amber-3: #302008;
@@ -105,10 +167,25 @@
 
 /*
  * ═══════════════════════════════════════════════════════════════
- * Green Scale — Based on Radix green (dark mode)
+ * Green Scale — Based on Radix green (light mode)
  * ═══════════════════════════════════════════════════════════════
  */
 :root {
+  --color-green-1: #fbfefc;
+  --color-green-2: #f4fbf6;
+  --color-green-3: #e6f6eb;
+  --color-green-4: #d6f1df;
+  --color-green-5: #c4e8d1;
+  --color-green-6: #adddc0;
+  --color-green-7: #8eceaa;
+  --color-green-8: #5bb98b;
+  --color-green-9: #30a46c;
+  --color-green-10: #2b9a66;
+  --color-green-11: #218358;
+  --color-green-12: #193b2d;
+}
+
+[data-theme="dark"] {
   --color-green-1: #0e1512;
   --color-green-2: #121b17;
   --color-green-3: #132d21;
@@ -133,20 +210,17 @@
    * BACKGROUNDS — 3 spatial layers
    * ═══════════════════════════════════════
    */
-  --color-base-0: var(--color-taupe-1);
+  --color-base-0: var(--color-taupe-4);
   --color-base-1: var(--color-taupe-2);
-  --color-base-2: var(--color-taupe-3);
-  --color-base-3: var(--color-taupe-4);
+  --color-base-2: var(--color-taupe-1);
+  --color-base-3: var(--color-taupe-3);
 
   /*
    * ═══════════════════════════════════════
    * INTERACTIVE — Alpha-based hover/highlight
-   *
-   * Works on any background layer because it's
-   * a semi-transparent overlay, not a fixed color.
    * ═══════════════════════════════════════
    */
-  --background-color-subtle: oklch(1 0 0 / 0.06);
+  --background-color-subtle: oklch(0 0 0 / 0.06);
 
   /*
    * ═══════════════════════════════════════
@@ -163,10 +237,10 @@
    * BORDERS — 2 levels
    * ═══════════════════════════════════════
    */
-  --border-color-neutral: var(--color-taupe-4);
-  --border-color-neutral-strong: var(--color-taupe-6);
+  --border-color-neutral: var(--color-taupe-5);
+  --border-color-neutral-strong: var(--color-taupe-7);
 
-  --ring-color-neutral: var(--color-taupe-4);
+  --ring-color-neutral: var(--color-taupe-5);
   --ring-color-focus: var(--color-purple-9);
 
   /*
@@ -227,14 +301,14 @@
    * INVERSE
    * ═══════════════════════════════════════
    */
-  --background-color-inverse: oklch(0.9 0.005 55);
+  --background-color-inverse: oklch(0.28 0.005 55);
 
   /*
    * ═══════════════════════════════════════
    * SPECIAL
    * ═══════════════════════════════════════
    */
-  --background-color-overlay: oklch(0 0 0 / 0.4);
+  --background-color-overlay: oklch(0 0 0 / 0.25);
 
   /* Terminal (forced dark) */
   --color-terminal: oklch(0.1 0.005 55);
@@ -246,14 +320,14 @@
    * SHADOWS
    * ═══════════════════════════════════════
    */
-  --inset-shadow-border: inset 0 0 0 1px oklch(1 0 0 / 0.06);
+  --inset-shadow-border: inset 0 0 0 1px oklch(0 0 0 / 0.06);
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.15), 0 8px 8px -8px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 2px 2px 0 rgba(0, 0, 0, 0.15), 0 8px 16px -4px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 4px 8px 0 rgba(0, 0, 0, 0.15);
-  --shadow-xl: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 4px 8px -4px rgba(0, 0, 0, 0.15), 0 16px 24px -8px rgba(0, 0, 0, 0.2);
-  --shadow-2xl: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.15), 0 24px 32px -8px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
+  --shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.06), 0 8px 8px -8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 2px 0 rgba(0, 0, 0, 0.06), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 1px 1px 0 rgba(0, 0, 0, 0.05), 0 4px 8px 0 rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 1px 1px 0 rgba(0, 0, 0, 0.05), 0 4px 8px -4px rgba(0, 0, 0, 0.08), 0 16px 24px -8px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 1px 1px 0 rgba(0, 0, 0, 0.05), 0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 24px 32px -8px rgba(0, 0, 0, 0.12);
 
   /*
    * ═══════════════════════════════════════
@@ -338,6 +412,60 @@
       transform: translateY(0);
     }
   }
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * Dark mode overrides
+ * ═══════════════════════════════════════════════════════════════
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Backgrounds invert */
+  --color-base-0: var(--color-taupe-1);
+  --color-base-1: var(--color-taupe-2);
+  --color-base-2: var(--color-taupe-3);
+  --color-base-3: var(--color-taupe-4);
+
+  /* Borders */
+  --border-color-neutral: var(--color-taupe-4);
+  --border-color-neutral-strong: var(--color-taupe-6);
+  --ring-color-neutral: var(--color-taupe-4);
+
+  /* Interactive */
+  --background-color-subtle: oklch(1 0 0 / 0.06);
+
+  /* Inverse */
+  --background-color-inverse: oklch(0.9 0.005 55);
+
+  /* Overlay */
+  --background-color-overlay: oklch(0 0 0 / 0.4);
+
+  /* Shadows */
+  --inset-shadow-border: inset 0 0 0 1px oklch(1 0 0 / 0.06);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.15), 0 8px 8px -8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 2px 2px 0 rgba(0, 0, 0, 0.15), 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 4px 8px 0 rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 4px 8px -4px rgba(0, 0, 0, 0.15), 0 16px 24px -8px rgba(0, 0, 0, 0.2);
+  --shadow-2xl: 0 1px 1px 0 rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.15), 0 24px 32px -8px rgba(0, 0, 0, 0.25);
+
+  /* Accent overrides */
+  --background-color-accent-subtle: var(--color-purple-3);
+  --text-color-accent: var(--color-purple-11);
+
+  /* Danger overrides */
+  --background-color-danger-subtle: var(--color-red-3);
+  --text-color-danger: var(--color-red-11);
+
+  /* Warn overrides */
+  --background-color-warn-subtle: var(--color-amber-3);
+  --text-color-warn: var(--color-amber-11);
+
+  /* Success overrides */
+  --background-color-success-subtle: var(--color-green-3);
+  --text-color-success: var(--color-green-11);
 }
 
 /* base reset */

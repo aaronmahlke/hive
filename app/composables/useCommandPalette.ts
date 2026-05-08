@@ -7,6 +7,8 @@ import {
   FolderIcon,
   CommandLineIcon,
   SparklesIcon,
+  SunIcon,
+  MoonIcon,
 } from "@heroicons/vue/16/solid";
 
 export type Command = {
@@ -91,6 +93,17 @@ export function useCommandPalette() {
       icon: Cog6ToothIcon,
       shortcut: "⌘,",
       action: () => { router.push("/settings"); },
+    });
+
+    // Appearance
+    const { resolved: themeResolved, toggleMode: toggleTheme } = useTheme();
+    cmds.push({
+      id: "appearance:toggle-theme",
+      label: themeResolved.value === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
+      category: "Appearance",
+      keywords: ["theme", "dark", "light", "mode", "appearance", "night", "day"],
+      icon: themeResolved.value === "dark" ? SunIcon : MoonIcon,
+      action: () => { toggleTheme(); },
     });
 
     // Projects
