@@ -48,7 +48,8 @@ if (import.meta.client) {
     >
       <!-- Sliding indicator -->
       <div
-        class="absolute top-0.5 bottom-0.5 rounded-[6px] bg-subtle shadow-sm transition-all duration-200 ease-out"
+        class="absolute top-0.5 bottom-0.5 rounded-[6px] shadow-sm transition-all duration-200 ease-out"
+        :class="model === 'build' ? 'bg-accent/10' : model === 'plan' ? 'bg-warn/10' : 'bg-subtle'"
         :style="indicatorStyle"
       />
 
@@ -57,7 +58,9 @@ if (import.meta.client) {
         :key="opt.value"
         :value="opt.value"
         class="text-copy relative z-1 flex h-6 cursor-pointer items-center gap-1.5 rounded-[6px] px-2 outline-none transition-colors select-none"
-        :class="model === opt.value ? 'text-primary' : 'text-tertiary hover:text-secondary'"
+        :class="model === opt.value
+          ? opt.value === 'build' ? 'text-accent' : opt.value === 'plan' ? 'text-warn' : 'text-primary'
+          : 'text-tertiary hover:text-secondary'"
       >
         <component v-if="opt.icon" :is="opt.icon" class="size-3.5" />
         <span>{{ opt.label }}</span>
