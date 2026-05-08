@@ -150,10 +150,11 @@ watch(open, (v, old) => {
   >
     <ComboboxAnchor as-child>
       <ComboboxTrigger
-        class="text-copy hover:bg-surface-3 flex max-w-48 items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
+        class="text-copy hover:bg-surface-3 flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
         :class="modelId ? 'text-secondary' : 'text-tertiary'"
       >
         <span class="truncate">{{ selectedModel?.name || modelId || "Model" }}</span>
+        <span v-if="selectedModel?.providerName" class="text-tertiary shrink-0">{{ selectedModel.providerName }}</span>
         <ChevronDownIcon class="size-3 shrink-0 opacity-50" />
       </ComboboxTrigger>
     </ComboboxAnchor>
@@ -187,15 +188,13 @@ watch(open, (v, old) => {
                 :value="model.key"
                 class="text-copy text-primary hover:bg-surface-1 data-[highlighted]:bg-surface-1 relative flex cursor-pointer items-center gap-2 px-3 py-1.5 outline-none"
               >
-                <span class="size-4 shrink-0">
-                  <ComboboxItemIndicator>
-                    <CheckIcon class="size-3.5" />
-                  </ComboboxItemIndicator>
-                </span>
                 <span class="flex min-w-0 flex-1 items-baseline gap-1.5">
                   <span class="truncate">{{ model.name }}</span>
                   <span class="text-tertiary shrink-0">{{ model.providerName }}</span>
                 </span>
+                <ComboboxItemIndicator class="shrink-0">
+                  <CheckIcon class="size-3.5" />
+                </ComboboxItemIndicator>
               </ComboboxItem>
             </ComboboxGroup>
 
@@ -211,12 +210,10 @@ watch(open, (v, old) => {
                   :value="model.key"
                   class="text-copy text-primary hover:bg-surface-1 data-[highlighted]:bg-surface-1 relative flex cursor-pointer items-center gap-2 px-3 py-1.5 outline-none"
                 >
-                  <span class="size-4 shrink-0">
-                    <ComboboxItemIndicator>
-                      <CheckIcon class="size-3.5" />
-                    </ComboboxItemIndicator>
-                  </span>
-                  <span class="truncate">{{ model.name }}</span>
+                  <span class="min-w-0 flex-1 truncate">{{ model.name }}</span>
+                  <ComboboxItemIndicator class="shrink-0">
+                    <CheckIcon class="size-3.5" />
+                  </ComboboxItemIndicator>
                 </ComboboxItem>
               </ComboboxGroup>
             </template>
