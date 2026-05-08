@@ -6,7 +6,7 @@ const { selectedFile } = useChanges();
 const isDiffOpen = computed(() => !!selectedFile.value);
 
 const { toggle: togglePalette } = useCommandPalette();
-const { leftCollapsed, toggleLeft } = useSidebarState();
+const { leftCollapsed, rightCollapsed, toggleLeft, toggleRight } = useSidebarState();
 
 function onGlobalKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -47,19 +47,30 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKeydown));
         <OButton
           variant="ghost"
           size="sm"
+          @click="toggleRight"
+        >
+          <template #leading>
+            <OSidebarIcon :collapsed="rightCollapsed" side="right" />
+          </template>
+        </OButton>
+        <OButton
+          variant="ghost"
+          size="sm"
           to="/settings"
           :icon-left="Cog6ToothIcon"
         />
       </div>
     </header>
 
-    <div class="flex min-h-0 flex-1 gap-1 px-1 pb-1">
+    <div class="flex min-h-0 flex-1 px-1 pb-1">
       <aside
         v-show="!isDiffOpen"
-        class="shrink-0 transition-[width] duration-200 ease-out"
-        :class="leftCollapsed ? 'w-0 overflow-hidden' : 'w-60'"
+        class="shrink-0 overflow-hidden transition-[width,margin] duration-200 ease-out"
+        :class="leftCollapsed ? 'w-0 mr-0' : 'w-60 mr-1'"
       >
-        <OSidebar />
+        <div class="w-60 h-full">
+          <OSidebar />
+        </div>
       </aside>
 
       <main

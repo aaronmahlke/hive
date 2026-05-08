@@ -3,7 +3,6 @@ import {
   ArrowPathIcon,
   ArrowUpTrayIcon,
   ChatBubbleLeftIcon,
-  CheckCircleIcon,
   CheckIcon,
   PlusIcon,
   DocumentIcon,
@@ -81,28 +80,15 @@ const commentsByFile = computed(() => {
   return map;
 });
 
-const showCommitForm = ref(false);
 const commitMessageInput = ref("");
-
-function openCommitForm() {
-  commitMessageInput.value = defaultCommitMessage;
-  showCommitForm.value = true;
-}
-
-function cancelCommit() {
-  showCommitForm.value = false;
-  commitMessageInput.value = "";
-}
 
 function handleCommit() {
   if (!commitMessageInput.value.trim()) return;
   emit("commit", commitMessageInput.value.trim());
 }
 
-// Close form after successful commit (files list becomes empty)
 watch(() => files.length, (len, prevLen) => {
-  if (prevLen > 0 && len === 0 && showCommitForm.value) {
-    showCommitForm.value = false;
+  if (prevLen > 0 && len === 0) {
     commitMessageInput.value = "";
   }
 });
@@ -279,87 +265,48 @@ const statusColors: Record<string, string> = {
       </template>
     </div>
 
-    <!-- Actions -->
-    <div v-if="files.length || ahead" class="border-neutral flex flex-col gap-1.5 border-t p-2">
-      <div v-if="commentCount && !showCommitForm" class="text-copy text-tertiary flex items-center gap-1 px-0.5">
-        <ChatBubbleLeftIcon class="size-3" />
-        {{ commentCount }} comment{{ commentCount !== 1 ? "s" : "" }} pending
+    <!-- Commit & actions -->
+    <div class="border-neutral flex flex-col gap-2 border-t p-2">
+      <textarea
+        v-model="commitMessageInput"
+        class="text-copy text-primary placeholder:text-tertiary bg-subtle border-neutral w-full resize-none rounded-md border p-2 outline-none focus:border-neutral-strong"
+        rows="3"
+        placeholder="Commit message..."
+        :disabled="committing"
+        @keydown.enter.meta.prevent="handleCommit"
+      />
+      <p v-if="commitError" class="text-copy text-danger px-0.5 text-sm">
+        {{ commitError }}
+      </p>
+      <div class="flex gap-1.5">
+        <OButton
+          variant="primary"
+          size="sm"
+          class="flex-1"
+          :disabled="!commitMessageInput.trim() || !stagedFiles.length || committing"
+          :loading="committing"
+          @click="handleCommit"
+        >
+          Commit
+        </OButton>
+        <OButton
+          v-if="ahead > 0"
+          variant="transparent"
+          size="sm"
+          :icon-left="ArrowUpTrayIcon"
+          :loading="pushing"
+          :title="remoteExists ? `Push ${ahead} commit${ahead !== 1 ? 's' : ''} to origin/${branch}` : `Push branch ${branch} to origin`"
+          @click="emit('push')"
+        >
+          <template v-if="remoteExists">
+            Push <span class="text-tertiary ml-0.5">({{ ahead }})</span>
+          </template>
+          <template v-else>
+            Push
+          </template>
+        </OButton>
       </div>
-      <OButton
-        v-if="commentCount && !showCommitForm"
-        variant="primary"
-        size="md"
-        class="w-full"
-        @click="emit('request-changes')"
-      >
-        Request Changes
-      </OButton>
-
-      <OButton
-        v-if="stagedFiles.length && !showCommitForm"
-        variant="transparent"
-        size="md"
-        class="w-full"
-        :icon-left="CheckCircleIcon"
-        @click="openCommitForm"
-      >
-        Commit
-      </OButton>
-
-      <div v-if="showCommitForm" class="flex flex-col gap-1.5">
-        <textarea
-          v-model="commitMessageInput"
-          class="text-copy text-primary bg-subtle border-neutral w-full resize-none rounded-md border p-2 outline-none focus:border-neutral-strong"
-          rows="4"
-          placeholder="Commit message..."
-          :disabled="committing"
-          @keydown.enter.meta.prevent="handleCommit"
-          @keydown.escape.prevent="cancelCommit"
-        />
-        <p v-if="commitError" class="text-copy text-danger px-0.5">
-          {{ commitError }}
-        </p>
-        <div class="flex gap-1.5">
-          <OButton
-            variant="transparent"
-            size="sm"
-            class="flex-1"
-            :disabled="committing"
-            @click="cancelCommit"
-          >
-            Cancel
-          </OButton>
-          <OButton
-            variant="primary"
-            size="sm"
-            class="flex-1"
-            :disabled="!commitMessageInput.trim() || committing"
-            :loading="committing"
-            @click="handleCommit"
-          >
-            Commit
-          </OButton>
-        </div>
-      </div>
-
-      <OButton
-        v-if="ahead > 0 && !showCommitForm"
-        variant="transparent"
-        size="md"
-        class="w-full"
-        :icon-left="ArrowUpTrayIcon"
-        :loading="pushing"
-        :title="remoteExists ? `Push ${ahead} commit${ahead !== 1 ? 's' : ''} to origin/${branch}` : `Push branch ${branch} to origin`"
-        @click="emit('push')"
-      >
-        <template v-if="remoteExists">
-          Push <span class="text-tertiary ml-0.5">({{ ahead }})</span>
-        </template>
-        <template v-else>
-          Push Branch
-        </template>
-      </OButton>
-      <p v-if="pushError" class="text-copy text-danger px-0.5">
+      <p v-if="pushError" class="text-copy text-danger px-0.5 text-sm">
         {{ pushError }}
       </p>
     </div>

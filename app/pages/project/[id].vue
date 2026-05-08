@@ -7,7 +7,7 @@ const projectId = computed(() => route.params.id as string);
 const childSessionId = computed(() => (route.query.session as string) || null);
 const isInChildSession = computed(() => !!childSessionId.value);
 
-const { rightCollapsed, toggleRight } = useSidebarState();
+const { rightCollapsed } = useSidebarState();
 
 const { data: projectData } = useFetch(`/api/projects/${projectId.value}`);
 
@@ -92,63 +92,52 @@ const isSelectedFileViewed = computed(() =>
 </script>
 
 <template>
-  <div class="relative flex h-full flex-col overflow-hidden">
-    <OHeader
-      :icon="isInChildSession ? undefined : CommandLineIcon"
-      :title="headerTitle"
-    >
-      <template v-if="isInChildSession" #leading>
-        <OButton
-          variant="ghost"
-          size="sm"
-          :icon-left="ArrowLeftIcon"
-          @click="goBack"
-        />
-      </template>
-      <template #trailing>
-        <OButton
-          variant="ghost"
-          size="sm"
-          @click="toggleRight"
-        >
-          <template #leading>
-            <OSidebarIcon :collapsed="rightCollapsed" side="right" />
-          </template>
-        </OButton>
-        <OButton
-          v-if="!isInChildSession"
-          variant="transparent"
-          size="sm"
-          :icon-left="PlusIcon"
-          :loading="creatingSession"
-          title="New session"
-          @click="createNewSession"
-        />
-        <OScriptRunner
-          v-if="!isInChildSession"
-          :project-id="projectId"
-        />
-      </template>
-    </OHeader>
-
-    <div class="flex min-h-0 flex-1">
-      <div class="flex min-w-0 flex-1 flex-col">
-        <OChat
-          :key="chatKey"
-          :project-id="projectId"
-          :placeholder="isInChildSession ? 'Viewing sub-agent session...' : 'Ask anything...'"
-        />
-      </div>
-
-      <aside
-        class="shrink-0 overflow-hidden transition-[width] duration-200 ease-out"
-        :class="rightCollapsed ? 'w-0' : 'w-52'"
+  <div class="relative flex h-full overflow-hidden">
+    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+      <OHeader
+        :icon="isInChildSession ? undefined : CommandLineIcon"
+        :title="headerTitle"
       >
-        <div class="w-52 h-full border-l border-neutral">
-          <OChangesPanel />
-        </div>
-      </aside>
+        <template v-if="isInChildSession" #leading>
+          <OButton
+            variant="ghost"
+            size="sm"
+            :icon-left="ArrowLeftIcon"
+            @click="goBack"
+          />
+        </template>
+        <template #trailing>
+          <OButton
+            v-if="!isInChildSession"
+            variant="transparent"
+            size="sm"
+            :icon-left="PlusIcon"
+            :loading="creatingSession"
+            title="New session"
+            @click="createNewSession"
+          />
+          <OScriptRunner
+            v-if="!isInChildSession"
+            :project-id="projectId"
+          />
+        </template>
+      </OHeader>
+
+      <OChat
+        :key="chatKey"
+        :project-id="projectId"
+        :placeholder="isInChildSession ? 'Viewing sub-agent session...' : 'Ask anything...'"
+      />
     </div>
+
+    <aside
+      class="shrink-0 overflow-hidden transition-[width] duration-200 ease-out"
+      :class="rightCollapsed ? 'w-0' : 'w-52'"
+    >
+      <div class="w-52 h-full border-l border-neutral">
+        <OChangesPanel />
+      </div>
+    </aside>
 
     <!-- Diff overlay -->
     <OChangesOverlay
