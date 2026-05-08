@@ -48,6 +48,9 @@ type Props = {
 
 type Emits = {
   abort: [];
+  revert: [messageId: string];
+  fork: [messageId: string];
+  copy: [text: string];
 };
 
 type RenderBlock =
@@ -175,6 +178,11 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
 <template>
   <div class="py-5">
     <!-- User message -->
+    <OChatMessageMenu
+      @copy="emit('copy', userText)"
+      @revert="emit('revert', userMessage.info.id)"
+      @fork="emit('fork', userMessage.info.id)"
+    >
     <div class="pb-3">
       <div class="bg-subtle inline-block max-w-full rounded-xl px-3 py-2.5">
         <p v-if="userText" class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
@@ -195,6 +203,7 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
         </div>
       </div>
     </div>
+    </OChatMessageMenu>
 
     <!-- Working indicator -->
     <div v-if="isWorking && !blocks.length" class="px-3 py-1">

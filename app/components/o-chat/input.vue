@@ -26,6 +26,7 @@ type Emits = {
   abort: [];
   "update:mode": [mode: Mode];
   "update:modelId": [id: string];
+  "edit-last": [];
 };
 
 const {
@@ -75,6 +76,10 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key === "Escape" && isWorking) {
     e.preventDefault();
     emit("abort");
+  }
+  if (e.key === "ArrowUp" && !message.value.trim() && !isWorking) {
+    e.preventDefault();
+    emit("edit-last");
   }
 }
 

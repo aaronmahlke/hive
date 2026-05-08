@@ -322,6 +322,55 @@ export default defineWebSocketHandler({
         break;
       }
 
+      case "revert": {
+        const { messageId } = msg.data || {};
+        if (!messageId) return;
+
+        try {
+          const res = await fetch(
+            `http://localhost:${port}/session/${sessionId}/revert`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ messageID: messageId }),
+            },
+          );
+          if (res.ok) {
+            // Re-fetch messages after revert
+            fetchAndSendMessages(peer, port, sessionId);
+          }
+        } catch (e: any) {
+          peer.send(JSON.stringify({
+            type: "error",
+            data: { message: `Failed to revert: ${e.message}` },
+          }));
+        }
+        break;
+      }
+
+      case "fork": {
+        const { messageId } = msg.data || {};
+
+        try {
+          const res = await fetch(
+            `http://localhost:${port}/session/${sessionId}/fork`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(messageId ? { messageID: messageId } : {}),
+            },
+          );
+          const data = await res.json();
+          peer.send(JSON.stringify({ type: "forked", data }));
+        } catch (e: any) {
+          peer.send(JSON.stringify({
+            type: "error",
+            data: { message: `Failed to fork: ${e.message}` },
+          }));
+        }
+        break;
+      }
+
       case "fetch_session_messages": {
         // Client requests messages for a specific session (e.g. sub-agent)
         const { sessionId: targetId } = msg.data || {};

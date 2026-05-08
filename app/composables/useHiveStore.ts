@@ -80,6 +80,8 @@ type ConnectionState = {
   sessionStatus: Record<string, { type: string }>;
   /** Stack of parent session IDs for navigating back from sub-sessions */
   sessionStack: string[];
+  /** Last forked session ID — set when fork completes, consumed by UI */
+  _lastForkedSessionId?: string;
 };
 
 type ConnectionWs = {
@@ -421,6 +423,13 @@ function handleWsMessage(key: string, event: MessageEvent) {
       s.initializing = false;
       s.error = null;
       console.log(`[store] WS connected for ${key}`);
+      break;
+
+    case "forked":
+      // Forked session created — store the new session ID for the UI to pick up
+      if (msg.data?.id) {
+        s._lastForkedSessionId = msg.data.id;
+      }
       break;
 
     case "error":
@@ -842,5 +851,25 @@ export function useHiveStore() {
     fetchSessionMessages,
     childMessages,
     isSessionWorking,
+    revertMessage,
+    forkSession,
   };
+
+  /** Revert to before a specific user message. Returns the message text for re-editing. */
+  function revertMessage(key: string, messageId: string): string | null {
+    const msgs = getMessages(key);
+    const msg = msgs.value.find((m) => m.info.id === messageId);
+    const text = msg?.parts
+      ?.filter((p: any) => p.type === "text" && !p.synthetic)
+      .map((p: any) => p.text)
+      .join("") || null;
+
+    wsSend(key, { type: "revert", data: { messageId } });
+    return text;
+  }
+
+  /** Fork the current session. The forked session ID comes back via WS 'forked' event. */
+  function forkSession(key: string, messageId?: string) {
+    wsSend(key, { type: "fork", data: { messageId } });
+  }
 }

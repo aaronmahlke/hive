@@ -76,6 +76,43 @@ function handleRejectOcQuestion(requestId: string) {
   store.rejectQuestion(projectId, requestId);
 }
 
+function handleCopy(text: string) {
+  if (text) navigator.clipboard.writeText(text);
+}
+
+function handleRevert(messageId: string) {
+  const text = store.revertMessage(projectId, messageId);
+  if (text) {
+    draft.value = text;
+  }
+}
+
+function handleEditLast() {
+  // Find the last user message and revert to it
+  const allMsgs = messages.value;
+  for (let i = allMsgs.length - 1; i >= 0; i--) {
+    if (allMsgs[i].info.role === "user") {
+      handleRevert(allMsgs[i].info.id);
+      return;
+    }
+  }
+}
+
+function handleFork(messageId: string) {
+  store.forkSession(projectId, messageId);
+  // Watch for the forked session to arrive and switch to it
+  const unwatch = watch(
+    () => store.connection(projectId).state.value?._lastForkedSessionId,
+    (newId) => {
+      if (newId) {
+        store.connection(projectId).state.value!._lastForkedSessionId = undefined;
+        store.switchSession(projectId, newId);
+        unwatch();
+      }
+    },
+  );
+}
+
 // ── Scroll management via MutationObserver + ResizeObserver ──
 
 const stickToBottom = ref(true);
@@ -159,6 +196,9 @@ watch(initializing, (val, old) => {
           :answered-questions="answeredQuestions"
           :connection-key="projectId"
           @abort="handleAbort"
+          @copy="handleCopy"
+          @revert="handleRevert"
+          @fork="handleFork"
         />
       </div>
     </div>
@@ -211,6 +251,7 @@ watch(initializing, (val, old) => {
               @abort="handleAbort"
               @update:mode="mode = $event"
               @update:model-id="selectedModelId = $event"
+              @edit-last="handleEditLast"
             />
           </div>
         </div>
