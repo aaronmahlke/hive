@@ -13,13 +13,14 @@ type Props = {
   isWorking?: boolean;
   statusText?: string;
   formattedDuration?: string;
+  connectionKey?: string;
 };
 
 type Emits = {
   abort: [];
 };
 
-const { tools, isLast = false } = defineProps<Props>();
+const { tools, isLast = false, connectionKey = "" } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const lastTodoIndex = computed(() => {
@@ -38,6 +39,11 @@ const lastTodoIndex = computed(() => {
         v-if="tool.tool === 'todowrite' && tool.state?.input?.todos"
         :todos="tool.state.input.todos"
         :is-latest="i === lastTodoIndex"
+      />
+      <OChatToolTask
+        v-else-if="tool.tool === 'task' && connectionKey"
+        :part="tool as any"
+        :connection-key="connectionKey"
       />
       <OChatToolCall
         v-else

@@ -1,4 +1,4 @@
-type RawMessage = {
+export type RawMessage = {
   info: {
     role: "user" | "assistant";
     id: string;
@@ -76,6 +76,8 @@ type ConnectionState = {
   connected: boolean;
   initializing: boolean;
   error: string | null;
+  /** Status per session ID — tracks working state of child sessions */
+  sessionStatus: Record<string, { type: string }>;
 };
 
 type ConnectionWs = {
@@ -99,11 +101,24 @@ const wsConnections = getOrCreateGlobal("wsConnections", () => ({} as Record<str
 // Messages stored in shallowRef per connection to avoid deep reactivity overhead.
 const connectionMessages = getOrCreateGlobal("connectionMessages", () => new Map<string, Ref<RawMessage[]>>());
 
+// Child session messages — keyed by "connectionKey:sessionId"
+const childSessionMessages = getOrCreateGlobal("childSessionMessages", () => new Map<string, Ref<RawMessage[]>>());
+
 function getMessages(key: string): Ref<RawMessage[]> {
   let msgs = connectionMessages.get(key);
   if (!msgs) {
     msgs = shallowRef<RawMessage[]>([]);
     connectionMessages.set(key, msgs);
+  }
+  return msgs;
+}
+
+function getChildMessages(connectionKey: string, sessionId: string): Ref<RawMessage[]> {
+  const key = `${connectionKey}:child:${sessionId}`;
+  let msgs = childSessionMessages.get(key);
+  if (!msgs) {
+    msgs = shallowRef<RawMessage[]>([]);
+    childSessionMessages.set(key, msgs);
   }
   return msgs;
 }
@@ -123,6 +138,7 @@ function ensureState(key: string): ConnectionState {
       connected: false,
       initializing: false,
       error: null,
+      sessionStatus: {},
     };
   }
   getMessages(key);
@@ -165,6 +181,30 @@ function groupTurnsStable(key: string, messages: RawMessage[]): Turn[] {
   return result;
 }
 
+/**
+ * Determines if a message event belongs to the active session.
+ * Returns the session ID from the event data.
+ */
+function getEventSessionId(data: any): string | undefined {
+  return data?.sessionID || data?.info?.sessionID;
+}
+
+/**
+ * Apply a message event to the correct message store (active or child session).
+ * Returns the Ref<RawMessage[]> that was modified, or null if not applicable.
+ */
+function resolveMessageStore(key: string, eventSessionId: string | undefined): Ref<RawMessage[]> | null {
+  const s = state[key];
+  if (!s) return null;
+
+  if (!eventSessionId || eventSessionId === s.sessionId) {
+    return getMessages(key);
+  }
+
+  // It's a child session message
+  return getChildMessages(key, eventSessionId);
+}
+
 function handleWsMessage(key: string, event: MessageEvent) {
   const s = ensureState(key);
 
@@ -177,6 +217,7 @@ function handleWsMessage(key: string, event: MessageEvent) {
 
   switch (msg.type) {
     case "messages": {
+      // Full message list for active session (on connect / switch)
       const msgs = getMessages(key);
       msgs.value = msg.data as RawMessage[];
       for (let i = msgs.value.length - 1; i >= 0; i--) {
@@ -189,8 +230,20 @@ function handleWsMessage(key: string, event: MessageEvent) {
       break;
     }
 
+    case "session:messages": {
+      // Full message list for a child session (on demand fetch)
+      const { sessionId: childSessionId, messages } = msg.data;
+      if (!childSessionId || !Array.isArray(messages)) break;
+      const childMsgs = getChildMessages(key, childSessionId);
+      childMsgs.value = messages;
+      break;
+    }
+
     case "message:updated": {
-      const msgs = getMessages(key);
+      const eventSessionId = getEventSessionId(msg.data);
+      const msgs = resolveMessageStore(key, eventSessionId);
+      if (!msgs) break;
+
       const info = msg.data.info;
       if (!info?.id) break;
 
@@ -198,18 +251,23 @@ function handleWsMessage(key: string, event: MessageEvent) {
       if (idx >= 0) {
         msgs.value[idx] = { ...msgs.value[idx], info };
       } else {
-        const optimisticIdx = msgs.value.findIndex(
-          (m: RawMessage) => m.info.id.startsWith("optimistic-") && m.info.role === info.role,
-        );
-        if (optimisticIdx >= 0) {
-          const optimisticParts = msgs.value[optimisticIdx].parts;
-          msgs.value.splice(optimisticIdx, 1);
-          msgs.value.push({ info, parts: optimisticParts });
+        // Check for optimistic message (only in active session)
+        if (!eventSessionId || eventSessionId === s.sessionId) {
+          const optimisticIdx = msgs.value.findIndex(
+            (m: RawMessage) => m.info.id.startsWith("optimistic-") && m.info.role === info.role,
+          );
+          if (optimisticIdx >= 0) {
+            const optimisticParts = msgs.value[optimisticIdx].parts;
+            msgs.value.splice(optimisticIdx, 1);
+            msgs.value.push({ info, parts: optimisticParts });
+          } else {
+            msgs.value.push({ info, parts: [] });
+          }
         } else {
           msgs.value.push({ info, parts: [] });
         }
       }
-      if (info.role === "assistant" && info.modelID) {
+      if (info.role === "assistant" && info.modelID && (!eventSessionId || eventSessionId === s.sessionId)) {
         s.modelName = info.providerID ? `${info.providerID}/${info.modelID}` : info.modelID;
       }
       triggerRef(msgs);
@@ -217,7 +275,10 @@ function handleWsMessage(key: string, event: MessageEvent) {
     }
 
     case "message:part.updated": {
-      const msgs = getMessages(key);
+      const eventSessionId = getEventSessionId(msg.data);
+      const msgs = resolveMessageStore(key, eventSessionId);
+      if (!msgs) break;
+
       const part = msg.data.part;
       if (!part?.messageID) break;
 
@@ -237,8 +298,11 @@ function handleWsMessage(key: string, event: MessageEvent) {
     }
 
     case "message:part.delta": {
-      const msgs = getMessages(key);
-      const { sessionID, messageID, partID, field, delta } = msg.data;
+      const eventSessionId = msg.data?.sessionID;
+      const msgs = resolveMessageStore(key, eventSessionId);
+      if (!msgs) break;
+
+      const { messageID, partID, field, delta } = msg.data;
       if (!messageID || !partID || !delta) break;
 
       const msgIdx = msgs.value.findIndex((m: RawMessage) => m.info.id === messageID);
@@ -256,7 +320,7 @@ function handleWsMessage(key: string, event: MessageEvent) {
           message.parts.push({
             id: partID,
             messageID,
-            sessionID,
+            sessionID: eventSessionId,
             type: "text",
             [field || "text"]: delta,
           } as any);
@@ -267,7 +331,10 @@ function handleWsMessage(key: string, event: MessageEvent) {
     }
 
     case "message:removed": {
-      const msgs = getMessages(key);
+      const eventSessionId = getEventSessionId(msg.data);
+      const msgs = resolveMessageStore(key, eventSessionId);
+      if (!msgs) break;
+
       const { messageID } = msg.data;
       if (!messageID) break;
       const idx = msgs.value.findIndex((m: RawMessage) => m.info.id === messageID);
@@ -279,7 +346,10 @@ function handleWsMessage(key: string, event: MessageEvent) {
     }
 
     case "message:part.removed": {
-      const msgs = getMessages(key);
+      const eventSessionId = getEventSessionId(msg.data);
+      const msgs = resolveMessageStore(key, eventSessionId);
+      if (!msgs) break;
+
       const { messageID, partID } = msg.data;
       if (!messageID || !partID) break;
       const msgIdx = msgs.value.findIndex((m: RawMessage) => m.info.id === messageID);
@@ -294,9 +364,21 @@ function handleWsMessage(key: string, event: MessageEvent) {
       break;
     }
 
-    case "status":
-      s.isWorking = msg.data.type !== "idle";
+    case "status": {
+      const eventSessionId = msg.data.sessionID;
+      const isIdle = msg.data.type === "idle";
+
+      // Track per-session status
+      if (eventSessionId) {
+        s.sessionStatus[eventSessionId] = msg.data;
+      }
+
+      // Update main isWorking for the active session
+      if (!eventSessionId || eventSessionId === s.sessionId) {
+        s.isWorking = !isIdle;
+      }
       break;
+    }
 
     case "signal": {
       const idx = s.pendingQuestions.findIndex((q) => q.id === msg.data.id);
@@ -314,6 +396,7 @@ function handleWsMessage(key: string, event: MessageEvent) {
       );
       break;
 
+    // Permissions and questions are global (all sessions)
     case "permission:asked":
       s.pendingPermissions = [...s.pendingPermissions.filter((p) => p.id !== msg.data.id), msg.data];
       break;
@@ -323,7 +406,6 @@ function handleWsMessage(key: string, event: MessageEvent) {
       break;
 
     case "question:asked":
-      console.log("[store] question:asked received:", msg.data.id, msg.data.questions?.[0]?.question?.slice(0, 60));
       s.pendingOcQuestions = [...s.pendingOcQuestions.filter((q) => q.id !== msg.data.id), msg.data];
       break;
 
@@ -491,7 +573,6 @@ export function useHiveStore() {
       s.port = startResult.port;
       s.worktreeId = startResult.id;
 
-      // Use Hive DB as source of truth — POST without ?new reuses existing session
       const sessResult = await $fetch("/api/sessions", {
         method: "POST",
         body: { worktreeId: startResult.id },
@@ -538,6 +619,12 @@ export function useHiveStore() {
     delete wsConnections[key];
     connectionMessages.delete(key);
     prevTurnsMap.delete(key);
+    // Clean up child session messages
+    for (const k of childSessionMessages.keys()) {
+      if (k.startsWith(`${key}:child:`)) {
+        childSessionMessages.delete(k);
+      }
+    }
   }
 
   function connection(key: string) {
@@ -560,6 +647,7 @@ export function useHiveStore() {
       error: computed(() => state[key]?.error ?? null),
       port: computed(() => state[key]?.port ?? null),
       sessionId: computed(() => state[key]?.sessionId ?? null),
+      sessionStatus: computed(() => state[key]?.sessionStatus ?? {}),
     };
   }
 
@@ -567,7 +655,7 @@ export function useHiveStore() {
     return connection(projectId);
   }
 
-  function sendPrompt(key: string, text: string, opts?: { agent?: string; model?: string; attachments?: { type: "file"; mime: string; url: string; filename: string }[] }) {
+  function sendPrompt(key: string, text: string, opts?: { agent?: string; model?: string; attachments?: { type: "file"; mime: string; url: string; filename: string }[]; sessionId?: string }) {
     const s = ensureState(key);
 
     const parts: any[] = [];
@@ -578,6 +666,8 @@ export function useHiveStore() {
       }
     }
 
+    const targetSessionId = opts?.sessionId || s.sessionId;
+
     const msgs = getMessages(key);
     msgs.value = [
       ...msgs.value,
@@ -585,7 +675,7 @@ export function useHiveStore() {
         info: {
           role: "user",
           id: `optimistic-${Date.now()}`,
-          sessionID: s.sessionId || "",
+          sessionID: targetSessionId || "",
           time: { created: Date.now() },
         },
         parts,
@@ -598,14 +688,15 @@ export function useHiveStore() {
       data: {
         message: text,
         attachments: opts?.attachments,
+        sessionId: opts?.sessionId,
         ...(opts?.agent && { agent: opts.agent }),
         ...(opts?.model && { model: opts.model }),
       },
     });
   }
 
-  function abort(key: string) {
-    wsSend(key, { type: "abort" });
+  function abort(key: string, sessionId?: string) {
+    wsSend(key, { type: "abort", data: { sessionId } });
   }
 
   function resolveSignal(key: string, signalId: string, answer: string) {
@@ -619,10 +710,10 @@ export function useHiveStore() {
     }
   }
 
-  function replyPermission(key: string, requestId: string, reply: "once" | "always" | "reject") {
+  function replyPermission(key: string, requestId: string, reply: "once" | "always" | "reject", sessionId?: string) {
     wsSend(key, {
       type: "reply_permission",
-      data: { requestId, reply },
+      data: { requestId, reply, sessionId },
     });
     const s = state[key];
     if (s) {
@@ -661,6 +752,27 @@ export function useHiveStore() {
     }
   }
 
+  /** Fetch messages for a child/sub-agent session */
+  function fetchSessionMessages(key: string, sessionId: string) {
+    wsSend(key, {
+      type: "fetch_session_messages",
+      data: { sessionId },
+    });
+  }
+
+  /** Get child session messages (reactive) */
+  function childMessages(key: string, sessionId: string): Ref<RawMessage[]> {
+    return getChildMessages(key, sessionId);
+  }
+
+  /** Check if a specific session is working */
+  function isSessionWorking(key: string, sessionId: string): boolean {
+    const s = state[key];
+    if (!s) return false;
+    const status = s.sessionStatus[sessionId];
+    return status ? status.type !== "idle" : false;
+  }
+
   return {
     activate,
     activateWorktree,
@@ -674,5 +786,8 @@ export function useHiveStore() {
     replyQuestion,
     rejectQuestion,
     switchSession,
+    fetchSessionMessages,
+    childMessages,
+    isSessionWorking,
   };
 }

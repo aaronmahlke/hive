@@ -43,6 +43,7 @@ type Props = {
   assistantMessages: Message[];
   isWorking?: boolean;
   answeredQuestions?: AnsweredQuestion[];
+  connectionKey?: string;
 };
 
 type Emits = {
@@ -238,6 +239,7 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
             :is-working="isWorking"
             :status-text="statusText"
             :formatted-duration="formattedDuration"
+            :connection-key="connectionKey"
             @abort="emit('abort')"
           />
           <OChatAnsweredQuestion

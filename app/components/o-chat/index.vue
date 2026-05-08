@@ -55,8 +55,8 @@ function handleResolveQuestion(signalId: string, answer: string) {
   store.resolveSignal(projectId, signalId, answer);
 }
 
-function handleReplyPermission(requestId: string, reply: "once" | "always" | "reject") {
-  store.replyPermission(projectId, requestId, reply);
+function handleReplyPermission(requestId: string, reply: "once" | "always" | "reject", sessionId?: string) {
+  store.replyPermission(projectId, requestId, reply, sessionId);
 }
 
 function handleReplyOcQuestion(requestId: string, answers: string[][]) {
@@ -148,6 +148,7 @@ watch(initializing, (val, old) => {
           :assistant-messages="turn.assistantMessages"
           :is-working="isWorking && i === turns.length - 1"
           :answered-questions="answeredQuestions"
+          :connection-key="projectId"
           @abort="handleAbort"
         />
       </div>

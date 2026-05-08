@@ -16,7 +16,7 @@ type Props = {
 };
 
 type Emits = {
-  reply: [requestId: string, reply: "once" | "always" | "reject"];
+  reply: [requestId: string, reply: "once" | "always" | "reject", sessionId: string];
 };
 
 const { permission } = defineProps<Props>();
@@ -47,21 +47,21 @@ const label = computed(() => {
           <button
             type="button"
             class="bg-accent text-accent-on text-copy rounded-md px-2.5 py-1 transition-colors hover:opacity-90"
-            @click="emit('reply', permission.id, 'once')"
+            @click="emit('reply', permission.id, 'once', permission.sessionID)"
           >
             Allow
           </button>
           <button
             type="button"
             class="bg-base-3 border-edge text-copy text-primary hover:bg-surface-1 rounded-md border px-2.5 py-1 transition-colors"
-            @click="emit('reply', permission.id, 'always')"
+            @click="emit('reply', permission.id, 'always', permission.sessionID)"
           >
             Always
           </button>
           <button
             type="button"
             class="text-copy text-danger hover:bg-danger-subtle rounded-md px-2.5 py-1 transition-colors"
-            @click="emit('reply', permission.id, 'reject')"
+            @click="emit('reply', permission.id, 'reject', permission.sessionID)"
           >
             Deny
           </button>

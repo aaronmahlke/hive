@@ -8,12 +8,13 @@ import { getProjectEvents, emitProjectEvent, emitOnPort } from "../../services/o
 /**
  * WebSocket endpoint for real-time project communication.
  *
- * Supports both main project and worktree connections:
- * - Main project: resolves port from project.configOverride
- * - Worktree: resolves port from worktrees table (pass worktreeId param)
+ * Forwards ALL events from the OpenCode SSE stream — no session filtering.
+ * The client receives events for all sessions (parent + children) and decides
+ * what to render. This enables sub-agent visibility: permissions, questions,
+ * messages, and status from child sessions flow through naturally.
  *
- * Status is driven entirely by OpenCode's session.status SSE events.
- * No fallback polling - SSE handles everything with auto-reconnect.
+ * Initial data (messages, status) is fetched for the "active" session on connect
+ * and on switch_session. SSE events for all sessions stream continuously.
  */
 
 const peerInfo = new Map<
@@ -42,14 +43,12 @@ export default defineWebSocketHandler({
     let port: number | null = null;
 
     if (worktreeId) {
-      // Worktree connection — resolve port from worktree DB record
       const worktree = await db.query.worktrees.findFirst({
         where: eq(worktrees.id, worktreeId),
       });
       port = worktree?.opencodePort ?? null;
       console.log(`[ws:open] Worktree lookup (${worktreeId}): port=${port} ${Date.now() - t0}ms`);
     } else {
-      // Main project connection — resolve port from project config
       const project = await db.query.projects.findFirst({
         where: eq(projects.id, projectId),
       });
@@ -79,57 +78,40 @@ export default defineWebSocketHandler({
     }));
     console.log(`[ws:open] Sent connected event: ${Date.now() - t0}ms`);
 
-    // Subscribe to OpenCode SSE events
+    // Subscribe to OpenCode SSE events — forward ALL events unfiltered.
+    // Each event includes its sessionID so the client can route them.
     const emitter = getProjectEvents(projectId, port);
 
     const handleEvent = (event: { type: string; properties: any }) => {
       try {
         const eventType = event.type;
-
-        const msgSessionId = event.properties?.sessionID
+        const eventSessionId = event.properties?.sessionID
           || event.properties?.info?.sessionID;
 
         if (eventType === "message.updated") {
-          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:updated", data: event.properties }));
         } else if (eventType === "message.part.updated") {
-          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:part.updated", data: event.properties }));
         } else if (eventType === "message.removed") {
-          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:removed", data: event.properties }));
         } else if (eventType === "message.part.delta") {
-          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:part.delta", data: event.properties }));
         } else if (eventType === "message.part.removed") {
-          if (msgSessionId && msgSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "message:part.removed", data: event.properties }));
         } else if (eventType === "session.status") {
-          const eventSessionId = event.properties?.sessionID;
-          if (eventSessionId && eventSessionId !== sessionId) return;
           const status = event.properties?.status;
           if (status) {
-            peer.send(JSON.stringify({ type: "status", data: status }));
+            peer.send(JSON.stringify({ type: "status", data: { ...status, sessionID: eventSessionId } }));
           }
         } else if (eventType === "session.idle") {
-          const eventSessionId = event.properties?.sessionID;
-          if (eventSessionId && eventSessionId !== sessionId) return;
-          peer.send(JSON.stringify({ type: "status", data: { type: "idle" } }));
+          peer.send(JSON.stringify({ type: "status", data: { type: "idle", sessionID: eventSessionId } }));
         } else if (eventType === "permission.asked") {
-          const eventSessionId = event.properties?.sessionID;
-          if (eventSessionId && eventSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "permission:asked", data: event.properties }));
         } else if (eventType === "permission.replied") {
-          const eventSessionId = event.properties?.sessionID;
-          if (eventSessionId && eventSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "permission:replied", data: event.properties }));
         } else if (eventType === "question.asked") {
-          const eventSessionId = event.properties?.sessionID;
-          if (eventSessionId && eventSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "question:asked", data: event.properties }));
         } else if (eventType === "question.replied" || eventType === "question.rejected") {
-          const eventSessionId = event.properties?.sessionID;
-          if (eventSessionId && eventSessionId !== sessionId) return;
           peer.send(JSON.stringify({ type: "question:resolved", data: event.properties }));
         } else if (eventType === "signal") {
           peer.send(JSON.stringify({ type: "signal", data: event.properties }));
@@ -147,7 +129,7 @@ export default defineWebSocketHandler({
       emitter.off("event", handleEvent);
     };
 
-    // Fetch initial data (non-blocking, parallel)
+    // Fetch initial data for the active session
     const t1 = Date.now();
     Promise.all([
       fetchAndSendStatus(peer, port, sessionId),
@@ -175,8 +157,10 @@ export default defineWebSocketHandler({
 
     switch (msg.type) {
       case "prompt": {
-        const { message: text, agent, model, attachments } = msg.data || {};
+        const { message: text, agent, model, attachments, sessionId: targetSessionId } = msg.data || {};
         if (!text && !attachments?.length) return;
+
+        const promptSessionId = targetSessionId || sessionId;
 
         const parts: any[] = [];
         if (text) parts.push({ type: "text", text });
@@ -199,7 +183,7 @@ export default defineWebSocketHandler({
 
         try {
           await fetch(
-            `http://localhost:${port}/session/${sessionId}/prompt_async`,
+            `http://localhost:${port}/session/${promptSessionId}/prompt_async`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -221,12 +205,12 @@ export default defineWebSocketHandler({
       }
 
       case "abort": {
+        const targetSessionId = msg.data?.sessionId || sessionId;
         try {
           await fetch(
-            `http://localhost:${port}/session/${sessionId}/abort`,
+            `http://localhost:${port}/session/${targetSessionId}/abort`,
             { method: "POST" },
           );
-          // Don't send local status - wait for SSE session.status event
         } catch (e: any) {
           peer.send(JSON.stringify({
             type: "error",
@@ -246,7 +230,6 @@ export default defineWebSocketHandler({
             .set({ resolved: true, resolvedContent: answer })
             .where(eq(signals.id, signalId));
 
-          // Emit on the current connection's port so the client gets confirmation
           emitOnPort(info.port, {
             type: "signal.resolved",
             properties: { signalId },
@@ -261,7 +244,7 @@ export default defineWebSocketHandler({
       }
 
       case "reply_permission": {
-        const { requestId, reply } = msg.data || {};
+        const { requestId, reply, sessionId: permSessionId } = msg.data || {};
         if (!requestId || !reply) return;
 
         try {
@@ -270,7 +253,10 @@ export default defineWebSocketHandler({
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ reply }),
+              body: JSON.stringify({
+                reply,
+                ...(permSessionId && { sessionID: permSessionId }),
+              }),
             },
           );
         } catch (e: any) {
@@ -321,11 +307,10 @@ export default defineWebSocketHandler({
         const { sessionId: newSessionId } = msg.data || {};
         if (!newSessionId) return;
 
-        // Update the peer's session ID
         info.sessionId = newSessionId;
         peerInfo.set(peer.id, info);
 
-        // Re-fetch and send all initial data for the new session
+        // Fetch initial data for the new active session
         Promise.all([
           fetchAndSendStatus(peer, info.port, newSessionId),
           fetchAndSendMessages(peer, info.port, newSessionId),
@@ -334,6 +319,24 @@ export default defineWebSocketHandler({
         ]).then(() => {
           peer.send(JSON.stringify({ type: "session_switched", data: { sessionId: newSessionId } }));
         }).catch(() => {});
+        break;
+      }
+
+      case "fetch_session_messages": {
+        // Client requests messages for a specific session (e.g. sub-agent)
+        const { sessionId: targetId } = msg.data || {};
+        if (!targetId) return;
+
+        try {
+          const res = await fetch(`http://localhost:${port}/session/${targetId}/message`);
+          const messages = await res.json();
+          if (Array.isArray(messages)) {
+            peer.send(JSON.stringify({
+              type: "session:messages",
+              data: { sessionId: targetId, messages },
+            }));
+          }
+        } catch {}
         break;
       }
 
@@ -358,10 +361,12 @@ async function fetchAndSendStatus(peer: Peer, port: number, sessionId: string) {
   try {
     const res = await fetch(`http://localhost:${port}/session/status`);
     const statusMap = await res.json();
-    const status = statusMap[sessionId] || { type: "idle" };
-    peer.send(JSON.stringify({ type: "status", data: status }));
+    // Send status for all sessions so client knows about child sessions too
+    for (const [sid, status] of Object.entries(statusMap)) {
+      peer.send(JSON.stringify({ type: "status", data: { ...(status as any), sessionID: sid } }));
+    }
   } catch {
-    peer.send(JSON.stringify({ type: "status", data: { type: "idle" } }));
+    peer.send(JSON.stringify({ type: "status", data: { type: "idle", sessionID: sessionId } }));
   }
 }
 
@@ -406,13 +411,10 @@ async function fetchAndSendQuestions(peer: Peer, port: number) {
   try {
     const res = await fetch(`http://localhost:${port}/question`);
     const questions = await res.json();
-    console.log(`[ws:open] Fetched ${Array.isArray(questions) ? questions.length : 0} pending questions from port ${port}`);
     if (Array.isArray(questions)) {
       for (const q of questions) {
         peer.send(JSON.stringify({ type: "question:asked", data: q }));
       }
     }
-  } catch (e: any) {
-    console.warn(`[ws:open] Failed to fetch questions from port ${port}:`, e.message);
-  }
+  } catch {}
 }
