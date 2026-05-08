@@ -169,7 +169,7 @@ watch(open, (v, old) => {
           <ComboboxInput
             v-model="searchTerm"
             :display-value="() => ''"
-            class="text-copy text-primary placeholder:text-tertiary border-neutral flex h-8 w-full border-b bg-transparent px-2.5 leading-none outline-none"
+            class="text-copy text-primary placeholder:text-tertiary border-neutral flex h-8 w-full border-b bg-transparent px-4 leading-none outline-none"
             placeholder="Search models..."
           />
 

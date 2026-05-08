@@ -95,13 +95,14 @@ const isLoading = refDebounced(toRef(props, "loading"), 100);
     ]"
     :disabled
   >
-    <component
-      v-if="iconLeft"
-      :is="iconLeft"
-      class="size-4"
-      :class="{ 'opacity-0': isLoading }"
-    />
-    <slot name="leading" />
+    <slot name="leading">
+      <component
+        v-if="iconLeft"
+        :is="iconLeft"
+        class="size-4"
+        :class="{ 'opacity-0': isLoading }"
+      />
+    </slot>
     <div
       v-if="$slots.default"
       class="inline"

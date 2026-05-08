@@ -42,14 +42,17 @@ if (import.meta.client) {
 <template>
   <div ref="containerRef" class="relative flex h-7 items-center rounded-lg bg-subtle p-0.5">
     <ToggleGroupRoot
-      v-model="model"
+      :model-value="model"
       type="single"
       class="flex items-center"
+      @update:model-value="($event) => { 
+        if ($event) model = $event
+        else model = options.find(o => o.value !== model)?.value || model 
+      }"
     >
       <!-- Sliding indicator -->
       <div
-        class="absolute top-0.5 bottom-0.5 rounded-[6px] shadow-sm transition-all duration-200 ease-out"
-        :class="model === 'build' ? 'bg-accent/10' : model === 'plan' ? 'bg-warn/10' : 'bg-subtle'"
+        class="absolute top-0.5 bottom-0.5 rounded-[6px] bg-base-2 shadow-sm transition-all duration-200 ease-out"
         :style="indicatorStyle"
       />
 

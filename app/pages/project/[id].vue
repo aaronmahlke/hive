@@ -7,6 +7,8 @@ const projectId = computed(() => route.params.id as string);
 const childSessionId = computed(() => (route.query.session as string) || null);
 const isInChildSession = computed(() => !!childSessionId.value);
 
+const { rightCollapsed, toggleRight } = useSidebarState();
+
 const { data: projectData } = useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
@@ -105,6 +107,15 @@ const isSelectedFileViewed = computed(() =>
       </template>
       <template #trailing>
         <OButton
+          variant="ghost"
+          size="sm"
+          @click="toggleRight"
+        >
+          <template #leading>
+            <OSidebarIcon :collapsed="rightCollapsed" side="right" />
+          </template>
+        </OButton>
+        <OButton
           v-if="!isInChildSession"
           variant="transparent"
           size="sm"
@@ -129,7 +140,10 @@ const isSelectedFileViewed = computed(() =>
         />
       </div>
 
-      <aside class="border-neutral flex w-52 shrink-0 flex-col border-l">
+      <aside
+        class="border-neutral shrink-0 transition-[width] duration-200 ease-out overflow-hidden"
+        :class="rightCollapsed ? 'w-0 border-l-0' : 'w-52 border-l'"
+      >
         <OChangesPanel />
       </aside>
     </div>

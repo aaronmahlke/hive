@@ -6,6 +6,7 @@ const { selectedFile } = useChanges();
 const isDiffOpen = computed(() => !!selectedFile.value);
 
 const { toggle: togglePalette } = useCommandPalette();
+const { leftCollapsed, toggleLeft } = useSidebarState();
 
 function onGlobalKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -22,8 +23,18 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKeydown));
   <TooltipProvider :delay-duration="400">
   <OCommandPalette />
   <div class="bg-base-0 flex h-screen flex-col overflow-hidden">
-    <header class="flex h-9 shrink-0 items-center">
+    <header class="flex h-10 shrink-0 items-center gap-1">
       <div class="w-20 shrink-0" />
+
+      <OButton
+        variant="ghost"
+        size="sm"
+        @click="toggleLeft"
+      >
+        <template #leading>
+          <OSidebarIcon :collapsed="leftCollapsed" side="left" />
+        </template>
+      </OButton>
 
       <OTabs />
 
@@ -34,10 +45,10 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKeydown));
 
       <div class="flex shrink-0 items-center gap-1 pr-2">
         <OButton
-          variant="transparent"
-          size="xs"
-          :icon-left="Cog6ToothIcon"
+          variant="ghost"
+          size="sm"
           to="/settings"
+          :icon-left="Cog6ToothIcon"
         />
       </div>
     </header>
@@ -45,7 +56,8 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKeydown));
     <div class="flex min-h-0 flex-1 gap-1 px-1 pb-1">
       <aside
         v-show="!isDiffOpen"
-        class="flex w-60 shrink-0 flex-col"
+        class="shrink-0 transition-[width] duration-200 ease-out"
+        :class="leftCollapsed ? 'w-0 overflow-hidden' : 'w-60'"
       >
         <OSidebar />
       </aside>

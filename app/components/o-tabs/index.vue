@@ -111,15 +111,13 @@ const { containerRef: tabListRef, draggingIndex } = useDragReorder(openTabs);
 
 <template>
   <div class="flex items-center gap-0.5">
-    <OHover :active="isHome" class="cursor-default">
-      <NuxtLink
-        to="/"
-        class="grid size-6 place-items-center outline-none"
-        :class="isHome ? 'text-primary' : 'text-tertiary'"
-      >
-        <RectangleStackIcon class="size-3.5" />
-      </NuxtLink>
-    </OHover>
+    <OButton
+      variant="ghost"
+      size="sm"
+      :icon-left="RectangleStackIcon"
+      to="/"
+      :class="isHome ? 'text-primary' : ''"
+    />
 
     <div ref="tabListRef" class="flex items-center gap-0.5">
       <OTooltip
@@ -157,14 +155,11 @@ const { containerRef: tabListRef, draggingIndex } = useDragReorder(openTabs);
       </OTooltip>
     </div>
 
-    <OHover class="cursor-default">
-      <button
-        type="button"
-        class="text-tertiary hover:text-primary grid size-6 place-items-center outline-none"
-        @click="openProject"
-      >
-        <PlusIcon class="size-3.5" />
-      </button>
-    </OHover>
+    <OButton
+      variant="ghost"
+      size="sm"
+      :icon-left="PlusIcon"
+      @click="openProject"
+    />
   </div>
 </template>

@@ -174,7 +174,7 @@ defineExpose({ focus: focusInput });
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
-    <div v-if="attachments.length" class="flex flex-wrap gap-1.5 px-3 pt-2">
+    <div v-if="attachments.length" class="flex flex-wrap gap-1.5 p-2">
       <OChatAttachmentPill
         v-for="att in attachments"
         :key="att.id"
@@ -191,13 +191,13 @@ defineExpose({ focus: focusInput });
       :disabled
       rows="2"
       data-chat-input
-      class="text-copy text-primary placeholder:text-tertiary block min-h-[4.5rem] w-full resize-none bg-transparent px-3 py-2 outline-none"
+      class="text-copy text-primary placeholder:text-tertiary block min-h-[4.5rem] w-full resize-none bg-transparent p-3 outline-none"
       @keydown="handleKeydown"
       @input="autoResize"
       @paste="handlePaste"
     />
 
-    <div class="flex items-center justify-between px-2.5 pb-1.5">
+    <div class="flex items-center justify-between px-2 pb-2">
       <div class="flex items-center gap-2">
         <OSegmentedControl
           :model-value="mode"
