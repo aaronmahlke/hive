@@ -150,7 +150,7 @@ watch(open, (v, old) => {
   >
     <ComboboxAnchor as-child>
       <ComboboxTrigger
-        class="text-copy hover:bg-subtle flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
+        class="text-copy hover:bg-subtle flex h-7 items-center gap-1 rounded-lg px-2 transition-colors outline-none"
         :class="modelId ? 'text-secondary' : 'text-tertiary'"
       >
         <span class="truncate">{{ selectedModel?.name || modelId || "Model" }}</span>

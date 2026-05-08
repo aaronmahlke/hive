@@ -186,22 +186,22 @@ defineExpose({ focus: focusInput });
       :disabled
       rows="1"
       data-chat-input
-      class="text-copy text-primary placeholder:text-tertiary block min-h-[2.25rem] w-full resize-none bg-transparent px-3 pt-2.5 pb-1.5 outline-none"
+      class="text-copy text-primary placeholder:text-tertiary block min-h-[2.75rem] w-full resize-none bg-transparent px-3 pt-3 pb-2 outline-none"
       @keydown="handleKeydown"
       @input="autoResize"
       @paste="handlePaste"
     />
 
     <div class="flex items-center justify-between px-2.5 pb-2">
-      <div class="flex items-center gap-1">
-        <button
-          type="button"
-          class="text-copy hover:bg-subtle flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
-          :class="mode === 'plan' ? 'text-accent' : 'text-tertiary'"
-          @click="toggleMode"
-        >
-          {{ mode === "build" ? "Build" : "Plan" }}
-        </button>
+      <div class="flex items-center gap-2">
+        <OSegmentedControl
+          :model-value="mode"
+          :options="[
+            { value: 'build', label: 'Build' },
+            { value: 'plan', label: 'Plan' },
+          ]"
+          @update:model-value="emit('update:mode', $event as Mode)"
+        />
 
         <OModelSelect
           v-if="projectId"

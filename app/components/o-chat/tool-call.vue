@@ -10,7 +10,6 @@ import {
   ListBulletIcon,
   ClipboardDocumentListIcon,
   CpuChipIcon,
-  CheckCircleIcon,
   ExclamationCircleIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/vue/16/solid";
@@ -72,13 +71,6 @@ const subtitle = computed(() => {
   return relativePath(raw);
 });
 
-const duration = computed(() => {
-  const t = part.state?.time;
-  if (!t?.start || !t?.end) return null;
-  const ms = t.end - t.start;
-  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
-});
-
 const output = computed(() => {
   const o = part.state?.output;
   if (!o) return "";
@@ -98,25 +90,22 @@ const editInput = computed(() => part.state?.input || {});
     ]"
     @click="toggle"
   >
-    <component
-      :is="def.icon"
-      class="size-3.5 shrink-0"
-      :class="{
-        'text-tertiary': part.state?.status === 'completed',
-        'text-accent': part.state?.status === 'running' || part.state?.status === 'pending',
-        'text-danger': part.state?.status === 'error',
-      }"
+    <ExclamationCircleIcon
+      v-if="part.state?.status === 'error'"
+      class="text-danger size-3.5 shrink-0"
     />
-    <span class="text-copy text-secondary shrink-0">{{ def.name }}</span>
-    <span class="text-copy text-tertiary min-w-0 flex-1 truncate font-mono">{{ subtitle }}</span>
-    <span v-if="duration" class="text-copy text-tertiary shrink-0 font-mono">{{ duration }}</span>
     <OLoader
-      v-if="part.state?.status === 'running' || part.state?.status === 'pending'"
+      v-else-if="part.state?.status === 'running' || part.state?.status === 'pending'"
       size="xs"
       class="text-primary shrink-0"
     />
-    <CheckCircleIcon v-else-if="part.state?.status === 'completed'" class="text-success size-3 shrink-0" />
-    <ExclamationCircleIcon v-else-if="part.state?.status === 'error'" class="text-danger size-3 shrink-0" />
+    <component
+      v-else
+      :is="def.icon"
+      class="text-tertiary size-3.5 shrink-0"
+    />
+    <span class="text-copy text-secondary shrink-0">{{ def.name }}</span>
+    <span class="text-copy text-tertiary min-w-0 flex-1 truncate font-mono">{{ subtitle }}</span>
 
   </div>
 

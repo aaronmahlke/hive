@@ -2,8 +2,6 @@
 import { Cog6ToothIcon } from "@heroicons/vue/16/solid";
 import { TooltipProvider } from "reka-ui";
 
-const route = useRoute();
-const hasProjectOpen = computed(() => !!route.params.id);
 const { selectedFile } = useChanges();
 const isDiffOpen = computed(() => !!selectedFile.value);
 
@@ -57,13 +55,6 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKeydown));
       >
         <slot />
       </main>
-
-      <aside
-        v-if="hasProjectOpen"
-        class="flex w-52 shrink-0 flex-col"
-      >
-        <OChangesPanel />
-      </aside>
     </div>
   </div>
   </TooltipProvider>

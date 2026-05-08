@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { QuestionMarkCircleIcon, CheckCircleIcon } from "@heroicons/vue/16/solid";
+import { QuestionMarkCircleIcon } from "@heroicons/vue/16/solid";
 
 type AnsweredQuestion = {
   id: string;
@@ -34,7 +34,6 @@ const summary = computed(() => {
     <QuestionMarkCircleIcon class="text-tertiary size-3.5 shrink-0" />
     <span class="text-copy text-secondary shrink-0">Question</span>
     <span class="text-copy text-tertiary min-w-0 flex-1 truncate">{{ summary }}</span>
-    <CheckCircleIcon class="text-success size-3 shrink-0" />
   </div>
 
   <div v-if="expanded" class="mb-1 mt-0.5">

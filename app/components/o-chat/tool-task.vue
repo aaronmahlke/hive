@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   CpuChipIcon,
-  CheckCircleIcon,
   ExclamationCircleIcon,
   EyeIcon,
   CodeBracketIcon,
@@ -126,14 +125,6 @@ function toolSubtitle(tool: string, input: any): string {
   }
 }
 
-const duration = computed(() => {
-  const t = part.state?.time;
-  if (!t?.start) return null;
-  const end = t.end || Date.now();
-  const ms = end - t.start;
-  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
-});
-
 const router = useRouter();
 const route = useRoute();
 
@@ -157,24 +148,21 @@ function navigateToChild() {
     :class="expanded ? 'bg-subtle' : ''"
     @click="childSessionId ? navigateToChild() : toggle()"
   >
-    <CpuChipIcon
-      class="size-3.5 shrink-0"
-      :class="{
-        'text-tertiary': part.state?.status === 'completed',
-        'text-accent': part.state?.status === 'running' || part.state?.status === 'pending',
-        'text-danger': part.state?.status === 'error',
-      }"
+    <ExclamationCircleIcon
+      v-if="part.state?.status === 'error'"
+      class="text-danger size-3.5 shrink-0"
     />
-    <span class="text-copy text-secondary shrink-0 capitalize">{{ agentType }} Agent</span>
-    <span class="text-copy text-tertiary min-w-0 flex-1 truncate">{{ description }}</span>
-    <span v-if="duration" class="text-copy text-tertiary shrink-0 font-mono">{{ duration }}</span>
     <OLoader
-      v-if="part.state?.status === 'running' || part.state?.status === 'pending'"
+      v-else-if="part.state?.status === 'running' || part.state?.status === 'pending'"
       size="xs"
       class="text-primary shrink-0"
     />
-    <CheckCircleIcon v-else-if="part.state?.status === 'completed'" class="text-success size-3 shrink-0" />
-    <ExclamationCircleIcon v-else-if="part.state?.status === 'error'" class="text-danger size-3 shrink-0" />
+    <CpuChipIcon
+      v-else
+      class="text-tertiary size-3.5 shrink-0"
+    />
+    <span class="text-copy text-secondary shrink-0 capitalize">{{ agentType }} Agent</span>
+    <span class="text-copy text-tertiary min-w-0 flex-1 truncate">{{ description }}</span>
   </div>
 
   <!-- Expanded: child session activity -->

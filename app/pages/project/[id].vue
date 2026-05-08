@@ -98,7 +98,7 @@ const isSelectedFileViewed = computed(() =>
       <template v-if="isInChildSession" #leading>
         <OButton
           variant="ghost"
-          size="xs"
+          size="sm"
           :icon-left="ArrowLeftIcon"
           @click="goBack"
         />
@@ -107,7 +107,7 @@ const isSelectedFileViewed = computed(() =>
         <OButton
           v-if="!isInChildSession"
           variant="transparent"
-          size="xs"
+          size="sm"
           :icon-left="PlusIcon"
           :loading="creatingSession"
           title="New session"
@@ -120,11 +120,19 @@ const isSelectedFileViewed = computed(() =>
       </template>
     </OHeader>
 
-    <OChat
-      :key="chatKey"
-      :project-id="projectId"
-      :placeholder="isInChildSession ? 'Viewing sub-agent session...' : 'Chat with the main agent...'"
-    />
+    <div class="flex min-h-0 flex-1">
+      <div class="flex min-w-0 flex-1 flex-col">
+        <OChat
+          :key="chatKey"
+          :project-id="projectId"
+          :placeholder="isInChildSession ? 'Viewing sub-agent session...' : 'Ask anything...'"
+        />
+      </div>
+
+      <aside class="border-neutral flex w-52 shrink-0 flex-col border-l">
+        <OChangesPanel />
+      </aside>
+    </div>
 
     <!-- Diff overlay -->
     <OChangesOverlay

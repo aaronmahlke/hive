@@ -13,6 +13,7 @@ type Props = {
 const { projectId, worktreePath = null } = defineProps<Props>();
 
 const open = ref(false);
+const lastUsedScript = useLocalStorage(`hive:lastScript:${projectId}`, "dev");
 
 const { data: scriptsData, refresh } = useFetch(
   () => `/api/projects/${projectId}/scripts`,
@@ -23,7 +24,6 @@ const { data: scriptsData, refresh } = useFetch(
   },
 );
 
-// Poll for active script status
 let poll: ReturnType<typeof setInterval> | null = null;
 onMounted(() => {
   poll = setInterval(() => refresh(), 3000);
@@ -36,8 +36,15 @@ const scripts = computed(() => Object.keys(scriptsData.value.scripts));
 const activeScript = computed(() => scriptsData.value.active);
 const isRunning = computed(() => !!activeScript.value);
 
+const primaryScript = computed(() => {
+  if (activeScript.value) return activeScript.value;
+  if (lastUsedScript.value && scripts.value.includes(lastUsedScript.value)) return lastUsedScript.value;
+  return scripts.value[0] || "dev";
+});
+
 async function runScript(script: string) {
   open.value = false;
+  lastUsedScript.value = script;
   await $fetch(`/api/projects/${projectId}/scripts`, {
     method: "POST",
     body: { script, worktreePath },
@@ -46,28 +53,42 @@ async function runScript(script: string) {
 }
 
 async function stop() {
+  open.value = false;
   await $fetch(`/api/projects/${projectId}/scripts`, {
     method: "POST",
     body: { stop: true },
   });
   await refresh();
 }
+
+function handlePrimaryClick() {
+  if (isRunning.value) {
+    stop();
+  } else {
+    runScript(primaryScript.value);
+  }
+}
 </script>
 
 <template>
-  <div class="flex items-center gap-0.5">
+  <OButtonGroup>
+    <OButton
+      variant="transparent"
+      size="sm"
+      :icon-left="isRunning ? StopIcon : PlayIcon"
+      :class="isRunning ? 'text-success' : ''"
+      @click="handlePrimaryClick"
+    >
+      <span class="font-mono">{{ primaryScript }}</span>
+    </OButton>
+
     <OPopover v-model="open" side="bottom" align="end">
       <template #trigger>
-        <button
-          type="button"
-          class="text-copy text-tertiary hover:text-primary flex h-6 items-center gap-1 rounded px-1.5 transition-colors"
-          :class="isRunning ? 'text-success' : ''"
-        >
-          <component :is="isRunning ? StopIcon : PlayIcon" class="size-3" />
-          <span v-if="activeScript" class="font-mono">{{ activeScript }}</span>
-          <span v-else>Run</span>
-          <ChevronDownIcon class="size-3 opacity-50" />
-        </button>
+        <OButton
+          variant="transparent"
+          size="sm"
+          :icon-left="ChevronDownIcon"
+        />
       </template>
 
       <div class="max-h-64 w-48 overflow-auto py-1">
@@ -106,5 +127,5 @@ async function stop() {
         </div>
       </div>
     </OPopover>
-  </div>
+  </OButtonGroup>
 </template>

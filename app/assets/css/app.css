@@ -162,10 +162,10 @@
    * BORDERS — 2 levels
    * ═══════════════════════════════════════
    */
-  --border-color-neutral: var(--color-taupe-5);
-  --border-color-neutral-strong: var(--color-taupe-7);
+  --border-color-neutral: var(--color-taupe-4);
+  --border-color-neutral-strong: var(--color-taupe-6);
 
-  --ring-color-neutral: var(--color-taupe-5);
+  --ring-color-neutral: var(--color-taupe-4);
   --ring-color-focus: var(--color-purple-9);
 
   /*

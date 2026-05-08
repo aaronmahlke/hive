@@ -135,7 +135,7 @@ watch(initializing, (val, old) => {
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <div ref="scrollArea" class="min-h-0 flex-1 overflow-y-auto" @scroll="onScroll">
+    <div ref="scrollArea" class="min-h-0 flex-1 overflow-y-auto pb-4" @scroll="onScroll">
       <div
         v-if="!turns.length && !isWorking"
         class="flex h-full items-center justify-center"
@@ -163,7 +163,7 @@ watch(initializing, (val, old) => {
       </div>
     </div>
 
-    <div class="shrink-0">
+    <div class="relative z-10 shrink-0 -mt-4">
       <div class="mx-auto max-w-3xl px-3 pb-3">
         <div class="bg-base-1 rounded-[14px] p-0.5">
           <OChatPermission
