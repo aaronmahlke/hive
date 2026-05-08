@@ -38,6 +38,7 @@ const { part, connectionKey } = defineProps<Props>();
 const expanded = ref(true); // Task calls are expanded by default
 
 const store = useHiveStore();
+const { relativePath } = useProjectPath();
 
 const childSessionId = computed(() => part.state?.metadata?.sessionId as string | undefined);
 const description = computed(() => part.state?.input?.description || "");
@@ -69,9 +70,10 @@ const childToolCalls = computed(() => {
     if (msg.info.role !== "assistant") continue;
     for (const p of msg.parts) {
       if (p.type === "tool" && p.tool) {
+        const rawTitle = p.state?.title || toolSubtitle(p.tool, p.state?.input) || "";
         tools.push({
           tool: p.tool,
-          title: p.state?.title || toolSubtitle(p.tool, p.state?.input) || "",
+          title: relativePath(rawTitle),
           status: p.state?.status || "pending",
         });
       }

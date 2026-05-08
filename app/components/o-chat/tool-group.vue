@@ -33,7 +33,7 @@ const lastTodoIndex = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-0.5">
     <template v-for="(tool, i) in tools" :key="tool.callID || tool.tool">
       <OChatToolTodos
         v-if="tool.tool === 'todowrite' && tool.state?.input?.todos"

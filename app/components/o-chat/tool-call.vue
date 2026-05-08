@@ -34,6 +34,7 @@ type Props = {
 };
 
 const { part } = defineProps<Props>();
+const { relativePath } = useProjectPath();
 const isRead = computed(() => part.tool === "read" || part.tool === "glob" || part.tool === "list");
 const expanded = ref(false);
 
@@ -64,7 +65,10 @@ const toolDefs: Record<string, ToolDef> = {
 };
 
 const def = computed(() => toolDefs[part.tool] || { icon: CodeBracketIcon, name: part.tool, subtitle: () => "" });
-const subtitle = computed(() => def.value.subtitle(part.state?.input) || part.state?.title || "");
+const subtitle = computed(() => {
+  const raw = def.value.subtitle(part.state?.input) || part.state?.title || "";
+  return relativePath(raw);
+});
 
 const duration = computed(() => {
   const t = part.state?.time;
