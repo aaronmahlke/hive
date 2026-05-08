@@ -207,8 +207,10 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
 
     <!-- Working indicator -->
     <div v-if="isWorking && !blocks.length" class="px-3 py-1">
-      <div class="flex items-center gap-1.5">
-        <OLoader size="xs" class="text-primary" />
+      <div class="flex items-center gap-2">
+        <span class="flex size-3.5 shrink-0 items-center justify-center">
+          <OLoader size="xs" class="text-primary" />
+        </span>
         <span class="text-copy text-secondary">{{ statusText }}</span>
         <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
           · {{ formattedDuration }}
@@ -258,8 +260,10 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
 
     <!-- Working indicator when actively streaming after existing blocks -->
     <div v-if="isWorking && blocks.length" class="px-3 py-1">
-      <div class="flex items-center gap-1.5">
-        <OLoader size="xs" class="text-primary" />
+      <div class="flex items-center gap-2">
+        <span class="flex size-3.5 shrink-0 items-center justify-center">
+          <OLoader size="xs" class="text-primary" />
+        </span>
         <span class="text-copy text-secondary">{{ statusText }}</span>
         <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
           · {{ formattedDuration }}

@@ -90,20 +90,22 @@ const editInput = computed(() => part.state?.input || {});
     ]"
     @click="toggle"
   >
-    <ExclamationCircleIcon
-      v-if="part.state?.status === 'error'"
-      class="text-danger size-3.5 shrink-0"
-    />
-    <OLoader
-      v-else-if="part.state?.status === 'running' || part.state?.status === 'pending'"
-      size="xs"
-      class="text-primary shrink-0"
-    />
-    <component
-      v-else
-      :is="def.icon"
-      class="text-tertiary size-3.5 shrink-0"
-    />
+    <span class="flex size-3.5 shrink-0 items-center justify-center">
+      <ExclamationCircleIcon
+        v-if="part.state?.status === 'error'"
+        class="text-danger size-3.5"
+      />
+      <OLoader
+        v-else-if="part.state?.status === 'running' || part.state?.status === 'pending'"
+        size="xs"
+        class="text-primary"
+      />
+      <component
+        v-else
+        :is="def.icon"
+        class="text-tertiary size-3.5"
+      />
+    </span>
     <span class="text-copy text-secondary shrink-0">{{ def.name }}</span>
     <span class="text-copy text-tertiary min-w-0 flex-1 truncate font-mono">{{ subtitle }}</span>
 

@@ -2,7 +2,7 @@
 </script>
 
 <template>
-  <div class="o-button-group border-neutral flex items-center rounded-lg border">
+  <div class="o-button-group border-neutral flex items-center overflow-hidden rounded-lg border">
     <slot />
   </div>
 </template>

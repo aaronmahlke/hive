@@ -148,19 +148,21 @@ function navigateToChild() {
     :class="expanded ? 'bg-subtle' : ''"
     @click="childSessionId ? navigateToChild() : toggle()"
   >
-    <ExclamationCircleIcon
-      v-if="part.state?.status === 'error'"
-      class="text-danger size-3.5 shrink-0"
-    />
-    <OLoader
-      v-else-if="part.state?.status === 'running' || part.state?.status === 'pending'"
-      size="xs"
-      class="text-primary shrink-0"
-    />
-    <CpuChipIcon
-      v-else
-      class="text-tertiary size-3.5 shrink-0"
-    />
+    <span class="flex size-3.5 shrink-0 items-center justify-center">
+      <ExclamationCircleIcon
+        v-if="part.state?.status === 'error'"
+        class="text-danger size-3.5"
+      />
+      <OLoader
+        v-else-if="part.state?.status === 'running' || part.state?.status === 'pending'"
+        size="xs"
+        class="text-primary"
+      />
+      <CpuChipIcon
+        v-else
+        class="text-tertiary size-3.5"
+      />
+    </span>
     <span class="text-copy text-secondary shrink-0 capitalize">{{ agentType }} Agent</span>
     <span class="text-copy text-tertiary min-w-0 flex-1 truncate">{{ description }}</span>
   </div>
