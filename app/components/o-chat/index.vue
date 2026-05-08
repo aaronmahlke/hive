@@ -14,6 +14,13 @@ const { turns, messages, isWorking, pendingQuestions, pendingPermissions, pendin
 const storageKey = computed(() => `hive:chat:${projectId}`);
 const mode = useLocalStorage<Mode>(`${storageKey.value}:mode`, "build");
 const draft = useLocalStorage(`${storageKey.value}:draft`, "");
+const { selectedModelId } = useSelectedModel(projectId);
+
+watch(modelName, (name) => {
+  if (name && !selectedModelId.value) {
+    selectedModelId.value = name;
+  }
+});
 const scrollArea = ref<HTMLDivElement>();
 const messageQueue = ref<string[]>([]);
 
@@ -30,7 +37,7 @@ function handleSend(text: string, attachments?: { type: "file"; mime: string; ur
   if (isWorking.value) {
     messageQueue.value.push(text);
   } else {
-    store.sendPrompt(projectId, text, { agent: mode.value, attachments });
+    store.sendPrompt(projectId, text, { agent: mode.value, attachments, ...(selectedModelId.value && { model: selectedModelId.value }) });
     stickToBottom.value = true;
     scrollToBottom();
   }
@@ -187,11 +194,13 @@ watch(initializing, (val, old) => {
               :disabled="!connected"
               :placeholder="placeholder || 'Send a message...'"
               :is-working
-              :model-name="modelName"
+              :project-id="projectId"
+              :model-id="selectedModelId"
               :mode
               @send="handleSend"
               @abort="handleAbort"
               @update:mode="mode = $event"
+              @update:model-id="selectedModelId = $event"
             />
           </div>
         </div>

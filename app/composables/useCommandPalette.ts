@@ -6,25 +6,29 @@ import {
   CodeBracketIcon,
   FolderIcon,
   CommandLineIcon,
-  ArrowUpTrayIcon,
-  CheckCircleIcon,
+  SparklesIcon,
 } from "@heroicons/vue/16/solid";
 
-type Command = {
+export type Command = {
   id: string;
   label: string;
   category: string;
   keywords?: string[];
   icon?: Component;
   shortcut?: string;
+  selected?: boolean;
+  suffix?: string;
+  /** If true, the palette stays open after this command runs. */
+  keepOpen?: boolean;
   action: () => void | Promise<void>;
 };
 
-type PalettePage = {
+export type PalettePage = {
   id: string;
   title: string;
   placeholder: string;
   commands: Command[];
+  loading?: boolean;
   onSubmit?: (value: string) => void | Promise<void>;
 };
 
@@ -38,6 +42,12 @@ export function useCommandPalette() {
 
   const projectId = computed(() => (route.params.id as string) || null);
   const { activeWorktreePath, setActive } = useActiveWorktree(projectId);
+  const connectionKey = computed(() => {
+    if (!projectId.value) return null;
+    if (!activeWorktreePath.value) return projectId.value;
+    return `wt:${activeWorktreePath.value}`;
+  });
+  const { selectedModelId, recentModels } = useSelectedModel(connectionKey);
   const openTabs = useLocalStorage<string[]>("hive:openTabs", []);
 
   const { data: projects } = useFetch("/api/projects", { default: () => [] });
@@ -51,7 +61,15 @@ export function useCommandPalette() {
   const isNested = computed(() => pages.value.length > 0);
 
   const commands = computed<Command[]>(() => {
-    if (currentPage.value) return currentPage.value.commands;
+    if (currentPage.value) {
+      const pageCommands = currentPage.value.commands;
+      const query = searchQuery.value.trim().toLowerCase();
+      if (!query) return pageCommands;
+      return pageCommands.filter((cmd) => {
+        const target = [cmd.label, cmd.category, ...(cmd.keywords || [])].join(" ").toLowerCase();
+        return target.includes(query);
+      });
+    }
 
     const cmds: Command[] = [];
 
@@ -62,7 +80,7 @@ export function useCommandPalette() {
       category: "Navigation",
       keywords: ["home", "dashboard", "projects"],
       icon: HomeIcon,
-      action: () => router.push("/"),
+      action: () => { router.push("/"); },
     });
 
     cmds.push({
@@ -72,7 +90,7 @@ export function useCommandPalette() {
       keywords: ["settings", "preferences", "config"],
       icon: Cog6ToothIcon,
       shortcut: "⌘,",
-      action: () => router.push("/settings"),
+      action: () => { router.push("/settings"); },
     });
 
     // Projects
@@ -102,7 +120,7 @@ export function useCommandPalette() {
           category: "Worktrees",
           keywords: ["worktree", "branch", "main", mainWt.branchName],
           icon: HomeIcon,
-          action: () => setActive(null),
+          action: () => { setActive(null); },
         });
       }
 
@@ -113,7 +131,7 @@ export function useCommandPalette() {
           category: "Worktrees",
           keywords: ["worktree", "branch", wt.branchName],
           icon: CodeBracketIcon,
-          action: () => setActive(wt.path),
+          action: () => { setActive(wt.path); },
         });
       }
     }
@@ -151,6 +169,7 @@ export function useCommandPalette() {
         category: "Actions",
         keywords: ["worktree", "branch", "new", "create"],
         icon: CodeBracketIcon,
+        keepOpen: true,
         action: () => {
           pushPage({
             id: "create-worktree",
@@ -183,6 +202,83 @@ export function useCommandPalette() {
         },
       });
 
+      cmds.push({
+        id: "action:switch-model",
+        label: "Switch Model",
+        category: "Actions",
+        keywords: ["model", "switch", "provider", "ai", "llm", "claude", "gpt", "openai", "anthropic"],
+        icon: SparklesIcon,
+        keepOpen: true,
+        action: () => {
+          // Push page immediately so the UI swaps instantly — no flicker
+          const page = pushPage({
+            id: "switch-model",
+            title: "Switch Model",
+            placeholder: "Search models...",
+            commands: [],
+          });
+
+          // Populate commands async
+          const store = useHiveStore();
+          const port = store.connection(connectionKey.value!).port.value;
+          if (!port) return;
+
+          $fetch(`/api/projects/${projectId.value}/providers`).then((data: any) => {
+            const providers = data?.providers || [];
+            const modelCommands: Command[] = [];
+            const modelLookup = new Map<string, { name: string; providerName: string }>();
+
+            for (const p of providers) {
+              const modelMap = p.models;
+              if (!modelMap || typeof modelMap !== "object") continue;
+              for (const m of Object.values(modelMap) as any[]) {
+                const key = `${p.id}/${m.id}`;
+                modelLookup.set(key, { name: m.name, providerName: p.name });
+                modelCommands.push({
+                  id: `model:${key}`,
+                  label: m.name,
+                  category: p.name,
+                  keywords: [m.id, m.name, p.name, p.id],
+                  icon: SparklesIcon,
+                  selected: key === selectedModelId.value,
+                  action: () => {
+                    selectedModelId.value = key;
+                    close();
+                  },
+                });
+              }
+            }
+
+            // Prepend recent models
+            const recentCmds: Command[] = [];
+            for (const rk of recentModels.value) {
+              const info = modelLookup.get(rk);
+              if (!info) continue;
+              recentCmds.push({
+                id: `recent:${rk}`,
+                label: info.name,
+                category: "Recent",
+                keywords: [rk, info.name, info.providerName],
+                icon: SparklesIcon,
+                selected: rk === selectedModelId.value,
+                suffix: info.providerName,
+                action: () => {
+                  selectedModelId.value = rk;
+                  close();
+                },
+              });
+            }
+
+            // Update the page's commands and trigger reactivity
+            pages.value = pages.value.map((pg) =>
+              pg.id === "switch-model" ? { ...pg, commands: [...recentCmds, ...modelCommands] } : pg,
+            );
+          }).catch((e) => {
+            console.error("Failed to fetch providers:", e);
+          });
+        },
+      });
+
       const q = searchQuery.value.trim().toLowerCase();
       if (q) {
         const existingBranches = (worktrees.value as any[]).map((w: any) => w.branchName.toLowerCase());
@@ -202,39 +298,46 @@ export function useCommandPalette() {
                 body: { projectId: projectId.value, branchName },
               }) as any;
               if (result?.path) setActive(result.path);
-              close();
             },
           });
         }
       }
     }
 
+    // Filter by search
     const query = searchQuery.value.trim().toLowerCase();
     if (!query) return cmds;
 
     return cmds.filter((cmd) => {
-      const target = [cmd.label, ...(cmd.keywords || [])].join(" ").toLowerCase();
+      const target = [cmd.label, cmd.category, ...(cmd.keywords || [])].join(" ").toLowerCase();
       return target.includes(query);
     });
   });
 
   function toggle() {
     open.value = !open.value;
-    if (!open.value) pages.value = [];
+    if (!open.value) {
+      pages.value = [];
+      searchQuery.value = "";
+    }
   }
 
   function close() {
     open.value = false;
     pages.value = [];
+    searchQuery.value = "";
   }
 
-  function pushPage(page: PalettePage) {
+  function pushPage(page: PalettePage): PalettePage {
     pages.value = [...pages.value, page];
+    searchQuery.value = "";
+    return page;
   }
 
   function popPage() {
     if (pages.value.length > 0) {
       pages.value = pages.value.slice(0, -1);
+      searchQuery.value = "";
     }
   }
 

@@ -180,8 +180,9 @@ function handleWsMessage(key: string, event: MessageEvent) {
       const msgs = getMessages(key);
       msgs.value = msg.data as RawMessage[];
       for (let i = msgs.value.length - 1; i >= 0; i--) {
-        if (msgs.value[i]?.info?.role === "assistant" && msgs.value[i]?.info?.modelID) {
-          s.modelName = msgs.value[i].info.modelID;
+        const info = msgs.value[i]?.info;
+        if (info?.role === "assistant" && info?.modelID) {
+          s.modelName = info.providerID ? `${info.providerID}/${info.modelID}` : info.modelID;
           break;
         }
       }
@@ -209,7 +210,7 @@ function handleWsMessage(key: string, event: MessageEvent) {
         }
       }
       if (info.role === "assistant" && info.modelID) {
-        s.modelName = info.modelID;
+        s.modelName = info.providerID ? `${info.providerID}/${info.modelID}` : info.modelID;
       }
       triggerRef(msgs);
       break;

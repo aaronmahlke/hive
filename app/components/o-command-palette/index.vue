@@ -13,7 +13,8 @@ import {
   ComboboxLabel,
   ComboboxItem,
 } from "reka-ui";
-import { ChevronLeftIcon } from "@heroicons/vue/16/solid";
+import { ChevronLeftIcon, CheckIcon } from "@heroicons/vue/16/solid";
+import type { Command } from "~/composables/useCommandPalette";
 
 const { open, searchQuery, commands, currentPage, isNested, close, popPage } = useCommandPalette();
 
@@ -21,12 +22,8 @@ watch(open, (val) => {
   if (val) searchQuery.value = "";
 });
 
-watch(isNested, () => {
-  searchQuery.value = "";
-});
-
 const grouped = computed(() => {
-  const groups = new Map<string, typeof commands.value>();
+  const groups = new Map<string, Command[]>();
   for (const cmd of commands.value) {
     const list = groups.get(cmd.category) || [];
     list.push(cmd);
@@ -35,13 +32,12 @@ const grouped = computed(() => {
   return groups;
 });
 
-function handleSelect(cmd: any) {
-  if (!cmd) return;
-  const command = commands.value.find((c) => c.id === cmd);
-  if (command) {
-    command.action();
-    if (!isNested.value) close();
-  }
+function handleSelect(id: any) {
+  if (!id) return;
+  const command = commands.value.find((c) => c.id === id);
+  if (!command) return;
+  command.action();
+  if (!command.keepOpen) close();
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -142,7 +138,17 @@ const placeholder = computed(() => {
                       :is="cmd.icon"
                       class="text-tertiary size-4 shrink-0"
                     />
-                    <span class="min-w-0 flex-1 truncate">{{ cmd.label }}</span>
+                    <span class="flex min-w-0 flex-1 items-baseline gap-1.5">
+                      <span class="truncate">{{ cmd.label }}</span>
+                      <span
+                        v-if="cmd.suffix"
+                        class="text-tertiary shrink-0"
+                      >{{ cmd.suffix }}</span>
+                    </span>
+                    <CheckIcon
+                      v-if="cmd.selected"
+                      class="text-tertiary size-3.5 shrink-0"
+                    />
                     <span
                       v-if="cmd.shortcut"
                       class="bg-base-3 border-edge text-copy-xs text-tertiary shrink-0 rounded border px-1 py-0.5 font-mono"

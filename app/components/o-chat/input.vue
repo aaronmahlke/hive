@@ -16,7 +16,8 @@ type Props = {
   disabled?: boolean;
   placeholder?: string;
   isWorking?: boolean;
-  modelName?: string;
+  projectId?: string;
+  modelId?: string;
   mode?: Mode;
 };
 
@@ -24,13 +25,15 @@ type Emits = {
   send: [message: string, attachments: { type: "file"; mime: string; url: string; filename: string }[]];
   abort: [];
   "update:mode": [mode: Mode];
+  "update:modelId": [id: string];
 };
 
 const {
   disabled = false,
   placeholder = "Send a message...",
   isWorking = false,
-  modelName = "",
+  projectId = "",
+  modelId = "",
   mode = "build",
 } = defineProps<Props>();
 
@@ -200,9 +203,12 @@ defineExpose({ focus: focusInput });
           {{ mode === "build" ? "Build" : "Plan" }}
         </button>
 
-        <span v-if="modelName" class="text-copy-xs text-tertiary font-mono">
-          {{ modelName }}
-        </span>
+        <OModelSelect
+          v-if="projectId"
+          :project-id="projectId"
+          :model-id="modelId"
+          @update:model-id="emit('update:modelId', $event)"
+        />
       </div>
 
       <div class="flex items-center gap-1.5">

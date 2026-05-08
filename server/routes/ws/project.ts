@@ -186,6 +186,17 @@ export default defineWebSocketHandler({
           }
         }
 
+        // model can be "providerId/modelId" composite or plain modelId
+        let providerID: string | undefined;
+        let modelID: string | undefined;
+        if (model && model.includes("/")) {
+          const idx = model.indexOf("/");
+          providerID = model.slice(0, idx);
+          modelID = model.slice(idx + 1);
+        } else if (model) {
+          modelID = model;
+        }
+
         try {
           await fetch(
             `http://localhost:${port}/session/${sessionId}/prompt_async`,
@@ -195,7 +206,8 @@ export default defineWebSocketHandler({
               body: JSON.stringify({
                 parts,
                 ...(agent && { agent }),
-                ...(model && { model }),
+                ...(providerID && { providerID }),
+                ...(modelID && { modelID }),
               }),
             },
           );
