@@ -32,26 +32,29 @@ const emit = defineEmits<Emits>();
         class="bg-base-2 border-neutral z-50 min-w-[10rem] overflow-hidden rounded-lg border p-1 shadow-lg"
       >
         <ContextMenuItem
-          class="text-copy text-primary data-[highlighted]:bg-subtle flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 outline-none select-none"
+          class="group/item relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-copy text-primary outline-none select-none"
           @select="emit('copy')"
         >
-          <ClipboardIcon class="text-tertiary size-3.5" />
-          Copy
+          <div class="absolute inset-0 rounded-[inherit] bg-subtle opacity-0 transition-[inset] duration-150 group-data-[highlighted]/item:opacity-100 group-active/item:inset-px" />
+          <ClipboardIcon class="relative z-1 text-tertiary group-data-[highlighted]/item:text-primary size-3.5" />
+          <span class="relative z-1">Copy</span>
         </ContextMenuItem>
         <ContextMenuItem
-          class="text-copy text-primary data-[highlighted]:bg-subtle flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 outline-none select-none"
+          class="group/item relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-copy text-primary outline-none select-none"
           @select="emit('fork')"
         >
-          <ArrowPathRoundedSquareIcon class="text-tertiary size-3.5" />
-          Fork
+          <div class="absolute inset-0 rounded-[inherit] bg-subtle opacity-0 transition-[inset] duration-150 group-data-[highlighted]/item:opacity-100 group-active/item:inset-px" />
+          <ArrowPathRoundedSquareIcon class="relative z-1 text-tertiary group-data-[highlighted]/item:text-primary size-3.5" />
+          <span class="relative z-1">Fork</span>
         </ContextMenuItem>
-        <ContextMenuSeparator class="border-neutral mx-1 my-1 border-t" />
+        <ContextMenuSeparator class="border-neutral my-1 border-t" />
         <ContextMenuItem
-          class="text-copy text-danger data-[highlighted]:bg-danger-subtle flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 outline-none select-none"
+          class="group/item relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-copy text-danger outline-none select-none"
           @select="emit('revert')"
         >
-          <ArrowUturnLeftIcon class="size-3.5" />
-          Revert
+          <div class="absolute inset-0 rounded-[inherit] bg-danger-subtle opacity-0 transition-[inset] duration-150 group-data-[highlighted]/item:opacity-100 group-active/item:inset-px" />
+          <ArrowUturnLeftIcon class="relative z-1 size-3.5" />
+          <span class="relative z-1">Revert</span>
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenuPortal>

@@ -177,7 +177,7 @@ watch(open, (v, old) => {
             No models found
           </ComboboxEmpty>
 
-          <div class="max-h-64 overflow-auto py-1">
+          <div class="max-h-64 overflow-auto p-1">
             <ComboboxGroup v-if="recentGroup">
               <ComboboxLabel class="text-copy text-tertiary px-3 py-1 font-medium">
                 {{ recentGroup.providerName }}
@@ -186,7 +186,7 @@ watch(open, (v, old) => {
                 v-for="model in recentGroup.models"
                 :key="`recent:${model.key}`"
                 :value="model.key"
-                class="text-copy text-primary hover:bg-subtle data-[highlighted]:bg-subtle relative flex cursor-pointer items-center gap-2 px-3 py-1.5 outline-none"
+                class="text-copy text-primary hover:bg-subtle data-[highlighted]:bg-subtle relative flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 outline-none"
               >
                 <span class="flex min-w-0 flex-1 items-baseline gap-1.5">
                   <span class="truncate">{{ model.name }}</span>
@@ -208,7 +208,7 @@ watch(open, (v, old) => {
                   v-for="model in group.models"
                   :key="model.key"
                   :value="model.key"
-                  class="text-copy text-primary hover:bg-subtle data-[highlighted]:bg-subtle relative flex cursor-pointer items-center gap-2 px-3 py-1.5 outline-none"
+                  class="text-copy text-primary hover:bg-subtle data-[highlighted]:bg-subtle relative flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 outline-none"
                 >
                   <span class="min-w-0 flex-1 truncate">{{ model.name }}</span>
                   <ComboboxItemIndicator class="shrink-0">

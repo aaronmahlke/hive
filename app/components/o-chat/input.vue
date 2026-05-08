@@ -191,7 +191,7 @@ defineExpose({ focus: focusInput });
       :disabled
       rows="1"
       data-chat-input
-      class="text-copy text-primary placeholder:text-tertiary block min-h-[2.75rem] w-full resize-none bg-transparent px-3 pt-3 pb-2 outline-none"
+      class="text-copy text-primary placeholder:text-tertiary block min-h-[2.75rem] w-full resize-none bg-transparent px-3 py-3 outline-none"
       @keydown="handleKeydown"
       @input="autoResize"
       @paste="handlePaste"

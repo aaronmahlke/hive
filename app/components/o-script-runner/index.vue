@@ -82,7 +82,7 @@ function handlePrimaryClick() {
       <span class="font-mono">{{ primaryScript }}</span>
     </OButton>
 
-    <OPopover v-model="open" side="bottom" align="end">
+    <ODropdownMenu v-model="open" side="bottom" align="end">
       <template #trigger>
         <OButton
           variant="transparent"
@@ -91,41 +91,29 @@ function handlePrimaryClick() {
         />
       </template>
 
-      <div class="max-h-64 w-48 overflow-auto py-1">
-        <button
-          v-if="isRunning"
-          type="button"
-          class="text-copy text-danger hover:bg-subtle flex w-full items-center gap-2 px-3 py-1.5 text-left"
-          @click="stop"
-        >
-          <StopIcon class="size-3 shrink-0" />
-          Stop {{ activeScript }}
-        </button>
+      <ODropdownMenuItem
+        v-if="isRunning"
+        variant="danger"
+        :icon="StopIcon"
+        @click="stop"
+      >
+        Stop {{ activeScript }}
+      </ODropdownMenuItem>
 
-        <div
-          v-if="isRunning && scripts.length"
-          class="border-neutral mx-2 my-1 border-t"
-        />
+      <ODropdownMenuSeparator v-if="isRunning && scripts.length" />
 
-        <button
-          v-for="script in scripts"
-          :key="script"
-          type="button"
-          class="text-copy hover:bg-subtle flex w-full items-center gap-2 px-3 py-1.5 text-left"
-          :class="script === activeScript ? 'text-success' : 'text-primary'"
-          @click="runScript(script)"
-        >
-          <PlayIcon class="text-tertiary size-3 shrink-0" />
-          <span class="truncate font-mono">{{ script }}</span>
-        </button>
+      <ODropdownMenuItem
+        v-for="script in scripts"
+        :key="script"
+        :icon="PlayIcon"
+        @click="runScript(script)"
+      >
+        <span class="font-mono" :class="script === activeScript ? 'text-success' : ''">{{ script }}</span>
+      </ODropdownMenuItem>
 
-        <div
-          v-if="!scripts.length"
-          class="text-copy text-tertiary px-3 py-2 text-center"
-        >
-          No scripts found
-        </div>
+      <div v-if="!scripts.length" class="text-copy text-tertiary px-2 py-3 text-center">
+        No scripts found
       </div>
-    </OPopover>
+    </ODropdownMenu>
   </OButtonGroup>
 </template>
