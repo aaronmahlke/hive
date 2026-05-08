@@ -132,13 +132,19 @@ const duration = computed(() => {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
 });
 
+const router = useRouter();
+const route = useRoute();
+
 function toggle() {
   expanded.value = !expanded.value;
 }
 
 function navigateToChild() {
   if (childSessionId.value) {
-    store.enterChildSession(connectionKey, childSessionId.value);
+    router.push({
+      path: route.path,
+      query: { session: childSessionId.value },
+    });
   }
 }
 </script>

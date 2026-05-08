@@ -15,6 +15,7 @@ const slots = useSlots();
 <template>
   <header class="flex h-12.5 shrink-0 items-center p-2" :class="borderless ? '' : 'border-edge border-b'">
     <div class="flex flex-1 items-center gap-2 px-1.5">
+      <slot v-if="slots.leading" name="leading" />
       <div class="flex items-center gap-2">
         <component v-if="icon" :is="icon" class="text-primary size-4" />
         <span v-if="title" class="text-copy text-primary">{{ title }}</span>
@@ -25,7 +26,6 @@ const slots = useSlots();
       >
         {{ description }}
       </span>
-      <slot v-if="slots.leading" name="leading" />
     </div>
     <div v-if="slots.trailing" class="flex items-center gap-2">
       <slot name="trailing" />

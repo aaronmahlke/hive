@@ -2,18 +2,37 @@
 import { CommandLineIcon, PlusIcon, ArrowLeftIcon } from "@heroicons/vue/16/solid";
 
 const route = useRoute();
+const router = useRouter();
 const projectId = computed(() => route.params.id as string);
+const childSessionId = computed(() => (route.query.session as string) || null);
+const isInChildSession = computed(() => !!childSessionId.value);
 
 const { data: projectData } = useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
 const { activeSessionId, setActiveSession } = useActiveWorktree(projectId);
-const { isInChildSession, sessionId: currentSessionId } = store.connection(projectId.value);
-const chatKey = computed(() => `${projectId.value}:${currentSessionId.value || "default"}`);
+
+// The session to display: child session from URL query, or the active session
+const displaySessionId = computed(() => childSessionId.value || activeSessionId.value);
+const chatKey = computed(() => `${projectId.value}:${displaySessionId.value || "default"}`);
 
 // Activate main project on mount, passing the user's preferred session
 onMounted(() => {
   store.activate(projectId.value, activeSessionId.value);
+});
+
+// When navigating to a child session via URL, switch the store to it
+watch(childSessionId, (sid) => {
+  if (sid) {
+    store.enterChildSession(projectId.value, sid);
+  } else {
+    // Navigated back — restore the active session
+    const stored = activeSessionId.value;
+    const current = store.connection(projectId.value).sessionId.value;
+    if (stored && current !== stored) {
+      store.exitChildSession(projectId.value);
+    }
+  }
 });
 
 const creatingSession = ref(false);
@@ -40,11 +59,12 @@ async function createNewSession() {
 }
 
 function goBack() {
-  store.exitChildSession(projectId.value);
+  router.back();
 }
 
 // Header title
 const headerTitle = computed(() => {
+  if (isInChildSession.value) return "Sub-agent";
   return projectData.value?.name ?? "Project";
 });
 
