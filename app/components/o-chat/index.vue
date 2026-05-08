@@ -245,7 +245,7 @@ watch(initializing, (val, old) => {
             @remove="removeFromQueue"
           />
 
-          <div class="bg-base-3 border-neutral rounded-xl border">
+          <div class="bg-base-3 border-neutral rounded-[10px] border">
             <OChatInput
               v-model:draft="draft"
               :disabled="!connected"

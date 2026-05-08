@@ -23,13 +23,13 @@ const emit = defineEmits<Emits>();
       <p class="text-copy text-secondary min-w-0 flex-1 truncate py-0.5">
         {{ msg }}
       </p>
-      <button
-        type="button"
-        class="text-tertiary hover:text-primary grid size-5 shrink-0 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/q:opacity-100"
+      <OButton
+        variant="ghost"
+        size="xs"
+        :icon-left="XMarkIcon"
+        class="shrink-0 opacity-0 group-hover/q:opacity-100"
         @click="emit('remove', i)"
-      >
-        <XMarkIcon class="size-3" />
-      </button>
+      />
     </div>
   </div>
 </template>
