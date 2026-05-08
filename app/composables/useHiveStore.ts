@@ -410,7 +410,7 @@ function wsSend(key: string, data: any) {
 }
 
 export function useHiveStore() {
-  async function activate(projectId: string) {
+  async function activate(projectId: string, preferredSessionId?: string | null) {
     const key = projectId;
     const s = ensureState(key);
 
@@ -429,20 +429,34 @@ export function useHiveStore() {
     console.log(`[activate] Starting for ${projectId}...`);
 
     try {
+      // 1. Start the OpenCode server
       const startResult = await $fetch(`/api/projects/${projectId}/start`, {
         method: "POST",
       });
       s.port = (startResult as any).port;
       console.log(`[activate] POST /start done: ${Math.round(performance.now() - t0)}ms (port=${s.port})`);
 
-      const t1 = performance.now();
-      const sessResult = await $fetch(`/api/projects/${projectId}/session`, {
-        method: "POST",
-      });
-      s.sessionId = (sessResult as any).sessionId;
-      console.log(`[activate] POST /session done: ${Math.round(performance.now() - t1)}ms (sessionId=${s.sessionId})`);
+      // 2. Resolve session: preferred > most recent existing > create new
+      let sessionId = preferredSessionId || null;
 
-      console.log(`[activate] Connecting WS... (total so far: ${Math.round(performance.now() - t0)}ms)`);
+      if (!sessionId) {
+        const t1 = performance.now();
+        const sessions = await $fetch(`/api/projects/${projectId}/sessions`) as any[];
+        console.log(`[activate] Fetched ${sessions.length} sessions: ${Math.round(performance.now() - t1)}ms`);
+        if (sessions.length > 0) {
+          sessionId = sessions[0].id; // sorted by most recent
+        }
+      }
+
+      if (!sessionId) {
+        const t2 = performance.now();
+        const newSess = await $fetch(`/api/projects/${projectId}/sessions`, { method: "POST" }) as any;
+        sessionId = newSess.sessionId;
+        console.log(`[activate] Created new session ${sessionId}: ${Math.round(performance.now() - t2)}ms`);
+      }
+
+      s.sessionId = sessionId;
+      console.log(`[activate] Using session ${sessionId}, connecting WS... (total: ${Math.round(performance.now() - t0)}ms)`);
       connectWs(key, projectId, s.sessionId!);
     } catch (e: any) {
       s.initializing = false;

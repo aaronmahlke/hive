@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import {
   PlusIcon,
+  ChatBubbleLeftIcon,
   FolderIcon,
-  UserGroupIcon,
+  ChatBubbleLeftEllipsisIcon,
 } from "@heroicons/vue/16/solid";
-
-type SidebarTab = "agents" | "files";
 
 const route = useRoute();
 const projectId = computed(() => {
@@ -13,169 +12,84 @@ const projectId = computed(() => {
   return null;
 });
 
-const activeTab = ref<SidebarTab>("agents");
+const store = useHiveStore();
+const { activeSessionId, setActiveSession } = useActiveWorktree(projectId);
 
-const { activeWorktreePath, activeSessionId, setActive, setActiveSession, isActive } = useActiveWorktree(projectId);
-
-const { data: worktreeList, refresh: refreshWorktrees } = await useFetch(
-  "/api/worktrees",
+// Fetch sessions from OpenCode via our new endpoint
+const { data: sessionList, refresh: refreshSessions } = useFetch(
+  () => projectId.value ? `/api/projects/${projectId.value}/sessions` : null,
   {
-    query: { projectId },
     watch: [projectId],
     default: () => [],
   },
 );
 
-let worktreePoll: ReturnType<typeof setInterval> | null = null;
+// Refresh session list when agent finishes working (title may have updated)
+const isWorking = computed(() => {
+  if (!projectId.value) return false;
+  return store.connection(projectId.value).isWorking.value;
+});
+
+watch(isWorking, (working, wasWorking) => {
+  if (wasWorking && !working) {
+    // Agent just finished — refresh to pick up new title
+    setTimeout(() => refreshSessions(), 500);
+  }
+});
+
+// Poll for session list updates (new sessions from TUI or other sources)
+let sessionPoll: ReturnType<typeof setInterval> | null = null;
 onMounted(() => {
-  worktreePoll = setInterval(() => refreshWorktrees(), 3000);
+  sessionPoll = setInterval(() => refreshSessions(), 5000);
 });
 onUnmounted(() => {
-  if (worktreePoll) clearInterval(worktreePoll);
+  if (sessionPoll) clearInterval(sessionPoll);
 });
 
-const mainWorktree = computed(() =>
-  worktreeList.value.find((wt: any) => wt.isMain),
-);
-
-const linkedWorktrees = computed(() =>
-  worktreeList.value.filter((wt: any) => !wt.isMain),
-);
-
-// Create worktree
-const showNewBranch = ref(false);
-const newBranchName = ref("");
-const creating = ref(false);
-
-async function createNewWorktree() {
-  if (!newBranchName.value || !projectId.value) return;
-
-  creating.value = true;
-  try {
-    await $fetch("/api/worktrees", {
-      method: "POST",
-      body: {
-        projectId: projectId.value,
-        branchName: newBranchName.value,
-      },
-    });
-    newBranchName.value = "";
-    showNewBranch.value = false;
-    await refreshWorktrees();
-  } catch (e: any) {
-    console.error("Failed to create worktree:", e);
-  } finally {
-    creating.value = false;
-  }
-}
-
-function selectWorktree(wt: any) {
-  // null path = main worktree
-  setActive(wt.isMain ? null : wt.path);
-}
-
-const store = useHiveStore();
-
-async function deleteWorktree(wt: any, e: Event) {
-  e.stopPropagation();
-  if (!wt.id) return;
-
-  // If this worktree is active, switch back to main
-  if (isActive(wt.path)) {
-    setActive(null);
-  }
-
-  // Deactivate the connection
-  store.deactivate(`wt:${wt.path}`);
-
-  try {
-    await $fetch(`/api/worktrees/${wt.id}`, { method: "DELETE" });
-    await refreshWorktrees();
-  } catch (e: any) {
-    console.error("Failed to delete worktree:", e);
-  }
-}
-
-
-// Sessions for the active worktree
-const activeWorktreeId = computed(() => {
-  if (!activeWorktreePath.value) return null;
-  const wt = worktreeList.value.find((w: any) => w.path === activeWorktreePath.value);
-  return wt?.id || null;
-});
-
-const mainWorktreeId = computed(() => mainWorktree.value?.id || null);
-
-const sessionWorktreeId = computed(() => activeWorktreeId.value || mainWorktreeId.value);
-
-const { data: sessionList, refresh: refreshSessions } = useFetch(
-  "/api/sessions",
-  {
-    query: { worktreeId: sessionWorktreeId },
-    watch: [sessionWorktreeId],
-    default: () => [],
-  },
-);
-
-watch(activeSessionId, () => refreshSessions());
-
-// Also fetch sessions for main when viewing a worktree (to show main's sessions when main is expanded)
-const { data: mainSessionList } = useFetch(
-  "/api/sessions",
-  {
-    query: { worktreeId: mainWorktreeId },
-    watch: [mainWorktreeId],
-    default: () => [],
-  },
-);
-
-function sessionsForWorktree(wt: any): any[] {
-  if (!wt) return [];
-  if (wt.isMain) return mainSessionList.value as any[];
-  if (wt.id === sessionWorktreeId.value) return sessionList.value as any[];
-  return [];
-}
-
-function selectSession(ocSessionId: string) {
-  setActiveSession(ocSessionId);
-  const key = activeWorktreePath.value ? `wt:${activeWorktreePath.value}` : projectId.value;
-  if (!key) return;
-  store.switchSession(key, ocSessionId);
-}
-
-async function deleteSession(ocSessionId: string, e: Event) {
-  e.stopPropagation();
-  // If this is the active session, switch to another one first
-  if (activeSessionId.value === ocSessionId) {
-    const sessions = sessionsForWorktree(
-      activeWorktreePath.value ? activeWorktreeObj.value : mainWorktree.value,
-    );
-    const other = sessions.find((s: any) => s.opencodeSessionId !== ocSessionId);
-    if (other) {
-      selectSession(other.opencodeSessionId);
-    }
-  }
-  // TODO: Add confirmation dialog
-  // For now just refresh the list (OpenCode sessions can't be deleted via API easily)
-  await refreshSessions();
-}
-
-// File tree for the active worktree
-const activeWorktreeObj = computed(() => {
-  if (!activeWorktreePath.value) return null;
-  return worktreeList.value.find((wt: any) => wt.path === activeWorktreePath.value) || null;
-});
-
-const fileTreePath = computed(() => activeWorktreeObj.value?.path || null);
-
-const { data: fileTree, refresh: refreshFileTree } = await useFetch(
+// File tree
+const { data: fileTree } = await useFetch(
   () => projectId.value ? `/api/projects/${projectId.value}/file-tree` : null,
   {
-    query: { worktreePath: fileTreePath },
-    watch: [projectId, fileTreePath],
+    watch: [projectId],
     default: () => [],
   },
 );
+
+type SidebarTab = "sessions" | "files";
+const activeTab = ref<SidebarTab>("sessions");
+
+function selectSession(sessionId: string) {
+  setActiveSession(sessionId);
+  const key = projectId.value;
+  if (!key) return;
+  store.switchSession(key, sessionId);
+}
+
+const creatingSession = ref(false);
+
+async function createNewSession() {
+  if (!projectId.value) return;
+
+  creatingSession.value = true;
+  try {
+    const result = await $fetch(`/api/projects/${projectId.value}/sessions`, {
+      method: "POST",
+    }) as { sessionId: string };
+
+    setActiveSession(result.sessionId);
+    store.switchSession(projectId.value, result.sessionId);
+    await refreshSessions();
+
+    nextTick(() => {
+      const input = document.querySelector("textarea[data-chat-input]") as HTMLTextAreaElement;
+      input?.focus();
+    });
+  } catch (e: any) {
+    console.error("Failed to create session:", e);
+  } finally {
+    creatingSession.value = false;
+  }
+}
 </script>
 
 <template>
@@ -186,9 +100,9 @@ const { data: fileTree, refresh: refreshFileTree } = await useFetch(
           <OButton
             variant="transparent"
             size="xs"
-            :icon-left="UserGroupIcon"
-            :class="activeTab === 'agents' ? 'text-primary' : 'text-tertiary'"
-            @click="activeTab = 'agents'"
+            :icon-left="ChatBubbleLeftEllipsisIcon"
+            :class="activeTab === 'sessions' ? 'text-primary' : 'text-tertiary'"
+            @click="activeTab = 'sessions'"
           />
           <OButton
             variant="transparent"
@@ -201,39 +115,20 @@ const { data: fileTree, refresh: refreshFileTree } = await useFetch(
       </template>
       <template #trailing>
         <OButton
-          v-if="activeTab === 'agents'"
+          v-if="activeTab === 'sessions'"
           variant="transparent"
           size="xs"
           :icon-left="PlusIcon"
+          :loading="creatingSession"
           :disabled="!projectId"
-          @click="showNewBranch = !showNewBranch"
+          title="New chat"
+          @click="createNewSession"
         />
       </template>
     </OHeader>
 
-    <!-- Agents tab -->
-    <div v-if="activeTab === 'agents'" class="flex-1 overflow-auto p-1.5">
-      <div v-if="showNewBranch" class="mb-1.5 px-1">
-        <form @submit.prevent="createNewWorktree" class="flex gap-1">
-          <OInput
-            v-model="newBranchName"
-            placeholder="feature/my-branch"
-            name="branch"
-            :disabled="creating"
-            class="flex-1"
-          />
-          <OButton
-            type="submit"
-            variant="primary"
-            size="md"
-            :loading="creating"
-            :disabled="!newBranchName"
-          >
-            Go
-          </OButton>
-        </form>
-      </div>
-
+    <!-- Sessions tab -->
+    <div v-if="activeTab === 'sessions'" class="flex-1 overflow-auto p-1.5">
       <div
         v-if="!projectId"
         class="text-copy-sm text-tertiary px-2 py-4 text-center"
@@ -241,61 +136,29 @@ const { data: fileTree, refresh: refreshFileTree } = await useFetch(
         Open a project first
       </div>
 
+      <div v-else-if="!sessionList.length" class="text-copy-sm text-tertiary px-2 py-4 text-center">
+        No sessions yet
+      </div>
+
       <div v-else class="flex flex-col gap-0.5">
-        <template v-if="mainWorktree">
-          <OSidebarWorktreeItem
-            is-main
-            :branch-name="mainWorktree.branchName"
-            :agent-status="mainWorktree.agentStatus"
-            :pending-signals="mainWorktree.pendingSignals"
-            :active="isActive(null)"
-            @click="selectWorktree(mainWorktree)"
-          />
-          <template v-if="isActive(null) && sessionsForWorktree(mainWorktree).length > 1">
-            <OSidebarSessionItem
-              v-for="session in sessionsForWorktree(mainWorktree)"
-              :key="session.opencodeSessionId"
-              :title="session.title"
-              :active="activeSessionId === session.opencodeSessionId || (!activeSessionId && sessionsForWorktree(mainWorktree).indexOf(session) === 0)"
-              @click="selectSession(session.opencodeSessionId)"
-              @delete="deleteSession(session.opencodeSessionId, $event)"
-            />
-          </template>
-        </template>
-
-        <template v-if="linkedWorktrees.length">
-          <div class="text-copy-xs text-tertiary mt-2 mb-0.5 px-2 font-medium uppercase tracking-wide">
-            Worktrees
-          </div>
-          <template v-for="wt in linkedWorktrees" :key="wt.path">
-            <OSidebarWorktreeItem
-              :branch-name="wt.branchName"
-              :agent-status="wt.agentStatus"
-              :pending-signals="wt.pendingSignals"
-              :active="isActive(wt.path)"
-              removable
-              @click="selectWorktree(wt)"
-              @remove="deleteWorktree(wt, $event)"
-            />
-            <template v-if="isActive(wt.path) && sessionsForWorktree(wt).length > 1">
-              <OSidebarSessionItem
-                v-for="session in sessionsForWorktree(wt)"
-                :key="session.opencodeSessionId"
-                :title="session.title"
-                :active="activeSessionId === session.opencodeSessionId || (!activeSessionId && sessionsForWorktree(wt).indexOf(session) === 0)"
-                @click="selectSession(session.opencodeSessionId)"
-                @delete="deleteSession(session.opencodeSessionId, $event)"
-              />
-            </template>
-          </template>
-        </template>
-
-        <div
-          v-if="!mainWorktree && !linkedWorktrees.length"
-          class="text-copy-sm text-tertiary px-2 py-4 text-center"
+        <OHover
+          v-for="session in sessionList"
+          :key="session.id"
+          full-width
+          :active="activeSessionId === session.id"
+          class="cursor-pointer"
+          @click="selectSession(session.id)"
         >
-          No worktrees
-        </div>
+          <div class="flex w-full items-center gap-2 px-2 py-1.5">
+            <ChatBubbleLeftIcon class="text-tertiary size-3.5 shrink-0" />
+            <span
+              class="text-copy-sm min-w-0 flex-1 truncate"
+              :class="activeSessionId === session.id ? 'text-primary' : 'text-secondary'"
+            >
+              {{ session.title }}
+            </span>
+          </div>
+        </OHover>
       </div>
     </div>
 
