@@ -336,12 +336,19 @@ export default defineWebSocketHandler({
             },
           );
           if (res.ok) {
-            // Re-fetch messages after revert
-            fetchAndSendMessages(peer, port, sessionId);
+            // Re-fetch messages after revert and confirm to client
+            await fetchAndSendMessages(peer, port, sessionId);
+            peer.send(JSON.stringify({ type: "reverted", data: { messageId } }));
+          } else {
+            const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
+            peer.send(JSON.stringify({
+              type: "revert_failed",
+              data: { message: err.data?.message || err.message || "Revert failed" },
+            }));
           }
         } catch (e: any) {
           peer.send(JSON.stringify({
-            type: "error",
+            type: "revert_failed",
             data: { message: `Failed to revert: ${e.message}` },
           }));
         }

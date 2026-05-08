@@ -32,7 +32,6 @@ watch(modelName, (name) => {
 });
 const scrollArea = ref<HTMLDivElement>();
 const messageQueue = ref<string[]>([]);
-const pendingRevertMessageId = ref<string | null>(null);
 
 // Auto-dequeue when agent finishes
 watch(isWorking, (working, wasWorking) => {
@@ -42,17 +41,8 @@ watch(isWorking, (working, wasWorking) => {
   }
 });
 
-async function handleSend(text: string, attachments?: { type: "file"; mime: string; url: string; filename: string }[]) {
+function handleSend(text: string, attachments?: { type: "file"; mime: string; url: string; filename: string }[]) {
   draft.value = "";
-
-  // If there's a pending revert, send it first then prompt after a short delay
-  if (pendingRevertMessageId.value) {
-    store.revertMessage(projectId, pendingRevertMessageId.value);
-    pendingRevertMessageId.value = null;
-    // Wait for revert to process before sending the new prompt
-    await new Promise((r) => setTimeout(r, 500));
-  }
-
   if (isWorking.value) {
     messageQueue.value.push(text);
   } else {
@@ -91,16 +81,17 @@ function handleCopy(text: string) {
 }
 
 function handleRevert(messageId: string) {
-  // Find the message text and stage for revert on next send
+  // Extract the message text, revert immediately, populate input
   const msg = messages.value.find((m) => m.info.id === messageId);
   if (!msg) return;
   const text = msg.parts
     ?.filter((p: any) => p.type === "text" && !p.synthetic)
     .map((p: any) => p.text)
     .join("") || "";
+
+  store.revertMessage(projectId, messageId);
   if (text) {
     draft.value = text;
-    pendingRevertMessageId.value = messageId;
   }
 }
 
@@ -253,20 +244,6 @@ watch(initializing, (val, old) => {
             :messages="messageQueue"
             @remove="removeFromQueue"
           />
-
-          <div
-            v-if="pendingRevertMessageId"
-            class="text-copy text-tertiary flex items-center gap-2 px-3 py-1.5"
-          >
-            <span>Editing message — will revert on send</span>
-            <button
-              type="button"
-              class="text-tertiary hover:text-primary transition-colors"
-              @click="pendingRevertMessageId = null; draft = ''"
-            >
-              Cancel
-            </button>
-          </div>
 
           <div class="bg-base-2 border-neutral rounded-xl border">
             <OChatInput

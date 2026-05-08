@@ -425,6 +425,15 @@ function handleWsMessage(key: string, event: MessageEvent) {
       console.log(`[store] WS connected for ${key}`);
       break;
 
+    case "reverted":
+      // Revert completed successfully — messages already refreshed by server
+      break;
+
+    case "revert_failed":
+      console.error(`[store:${key}] Revert failed:`, msg.data.message);
+      s.error = msg.data.message;
+      break;
+
     case "forked":
       // Forked session created — store the new session ID for the UI to pick up
       if (msg.data?.id) {
