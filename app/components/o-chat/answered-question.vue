@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { QuestionMarkCircleIcon, ChevronRightIcon, CheckCircleIcon } from "@heroicons/vue/16/solid";
+import { QuestionMarkCircleIcon, CheckCircleIcon } from "@heroicons/vue/16/solid";
 
 type AnsweredQuestion = {
   id: string;
@@ -26,32 +26,28 @@ const summary = computed(() => {
 </script>
 
 <template>
-  <div class="px-3 py-1">
-    <button
-      type="button"
-      class="text-copy text-tertiary hover:text-secondary flex items-center gap-1.5 outline-none"
-      @click="expanded = !expanded"
-    >
-      <ChevronRightIcon
-        class="size-3.5 transition-transform"
-        :class="expanded ? 'rotate-90' : ''"
-      />
-      <QuestionMarkCircleIcon class="size-3.5" />
-      <span class="text-secondary">{{ summary }}</span>
-    </button>
+  <div
+    class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-surface-1"
+    :class="expanded ? 'bg-surface-1' : ''"
+    @click="expanded = !expanded"
+  >
+    <QuestionMarkCircleIcon class="text-tertiary size-3.5 shrink-0" />
+    <span class="text-copy text-secondary shrink-0">Question</span>
+    <span class="text-copy text-tertiary min-w-0 flex-1 truncate">{{ summary }}</span>
+    <CheckCircleIcon class="text-success size-3 shrink-0" />
+  </div>
 
-    <div v-if="expanded" class="bg-surface-1 mt-1 ml-5 rounded-md px-3 py-2">
+  <div v-if="expanded" class="mb-1 mt-0.5">
+    <div class="bg-surface-1 rounded-md px-3 py-2">
       <div
         v-for="(q, idx) in data.questions"
         :key="idx"
         :class="idx > 0 ? 'border-edge mt-2 border-t pt-2' : ''"
       >
-        <p class="text-copy text-tertiary mb-1">{{ q.header || q.question }}</p>
+        <p class="text-copy text-tertiary mb-0.5">{{ q.header || q.question }}</p>
         <div class="flex items-center gap-1.5">
           <CheckCircleIcon class="text-success size-3 shrink-0" />
-          <span class="text-copy text-primary">
-            {{ data.answers[idx]?.join(", ") || "No answer" }}
-          </span>
+          <span class="text-copy text-primary">{{ data.answers[idx]?.join(", ") || "No answer" }}</span>
         </div>
       </div>
     </div>

@@ -240,12 +240,8 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
             :status-text="statusText"
             :formatted-duration="formattedDuration"
             :connection-key="connectionKey"
+            :answered-questions="answersForToolGroup(block.tools)"
             @abort="emit('abort')"
-          />
-          <OChatAnsweredQuestion
-            v-for="aq in answersForToolGroup(block.tools)"
-            :key="aq.id"
-            :data="aq"
           />
         </div>
       </template>

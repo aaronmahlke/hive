@@ -12,6 +12,7 @@ import {
   CpuChipIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
+  QuestionMarkCircleIcon,
 } from "@heroicons/vue/16/solid";
 
 type ToolPart = {
@@ -62,6 +63,7 @@ const toolDefs: Record<string, ToolDef> = {
   list: { icon: ListBulletIcon, name: "List", subtitle: (i) => i?.path || "" },
   todowrite: { icon: ClipboardDocumentListIcon, name: "Todos", subtitle: () => "" },
   task: { icon: CpuChipIcon, name: "Agent", subtitle: (i) => i?.description || "" },
+  question: { icon: QuestionMarkCircleIcon, name: "Question", subtitle: (i) => i?.questions?.[0]?.question || "" },
 };
 
 const def = computed(() => toolDefs[part.tool] || { icon: CodeBracketIcon, name: part.tool, subtitle: () => "" });
