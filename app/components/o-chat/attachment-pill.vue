@@ -21,7 +21,7 @@ const emit = defineEmits<Emits>();
       :alt="name"
       class="size-6 shrink-0 rounded object-cover"
     />
-    <span class="text-copy-xs text-secondary max-w-24 truncate">{{ name }}</span>
+    <span class="text-copy text-secondary max-w-24 truncate">{{ name }}</span>
     <button
       type="button"
       class="text-tertiary hover:text-primary grid size-4 shrink-0 place-items-center rounded-full transition-colors"

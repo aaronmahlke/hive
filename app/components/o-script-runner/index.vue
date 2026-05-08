@@ -60,7 +60,7 @@ async function stop() {
       <template #trigger>
         <button
           type="button"
-          class="text-copy-xs text-tertiary hover:text-primary flex h-6 items-center gap-1 rounded px-1.5 transition-colors"
+          class="text-copy text-tertiary hover:text-primary flex h-6 items-center gap-1 rounded px-1.5 transition-colors"
           :class="isRunning ? 'text-success' : ''"
         >
           <component :is="isRunning ? StopIcon : PlayIcon" class="size-3" />
@@ -74,7 +74,7 @@ async function stop() {
         <button
           v-if="isRunning"
           type="button"
-          class="text-copy-sm text-danger hover:bg-surface-1 flex w-full items-center gap-2 px-3 py-1.5 text-left"
+          class="text-copy text-danger hover:bg-surface-1 flex w-full items-center gap-2 px-3 py-1.5 text-left"
           @click="stop"
         >
           <StopIcon class="size-3 shrink-0" />
@@ -90,7 +90,7 @@ async function stop() {
           v-for="script in scripts"
           :key="script"
           type="button"
-          class="text-copy-sm hover:bg-surface-1 flex w-full items-center gap-2 px-3 py-1.5 text-left"
+          class="text-copy hover:bg-surface-1 flex w-full items-center gap-2 px-3 py-1.5 text-left"
           :class="script === activeScript ? 'text-success' : 'text-primary'"
           @click="runScript(script)"
         >
@@ -100,7 +100,7 @@ async function stop() {
 
         <div
           v-if="!scripts.length"
-          class="text-copy-sm text-tertiary px-3 py-2 text-center"
+          class="text-copy text-tertiary px-3 py-2 text-center"
         >
           No scripts found
         </div>

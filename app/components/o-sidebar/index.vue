@@ -4,6 +4,7 @@ import {
   ChatBubbleLeftIcon,
   FolderIcon,
   ChatBubbleLeftEllipsisIcon,
+  XMarkIcon,
 } from "@heroicons/vue/16/solid";
 
 const route = useRoute();
@@ -63,6 +64,42 @@ function selectSession(sessionId: string) {
   const key = projectId.value;
   if (!key) return;
   store.switchSession(key, sessionId);
+}
+
+const deleteTarget = ref<{ id: string; title: string } | null>(null);
+const showDeleteDialog = computed({
+  get: () => !!deleteTarget.value,
+  set: (v) => { if (!v) deleteTarget.value = null; },
+});
+
+function promptDelete(session: any, e: Event) {
+  e.stopPropagation();
+  deleteTarget.value = { id: session.id, title: session.title };
+}
+
+async function confirmDelete() {
+  if (!projectId.value || !deleteTarget.value) return;
+
+  const sessionId = deleteTarget.value.id;
+
+  // If deleting the active session, switch to another one first
+  if (activeSessionId.value === sessionId) {
+    const other = (sessionList.value as any[]).find((s: any) => s.id !== sessionId);
+    if (other) {
+      selectSession(other.id);
+    }
+  }
+
+  try {
+    await $fetch(`/api/projects/${projectId.value}/sessions/${sessionId}`, {
+      method: "DELETE",
+    });
+    await refreshSessions();
+  } catch (e: any) {
+    console.error("Failed to delete session:", e);
+  } finally {
+    deleteTarget.value = null;
+  }
 }
 
 const creatingSession = ref(false);
@@ -131,12 +168,12 @@ async function createNewSession() {
     <div v-if="activeTab === 'sessions'" class="flex-1 overflow-auto p-1.5">
       <div
         v-if="!projectId"
-        class="text-copy-sm text-tertiary px-2 py-4 text-center"
+        class="text-copy text-tertiary px-2 py-4 text-center"
       >
         Open a project first
       </div>
 
-      <div v-else-if="!sessionList.length" class="text-copy-sm text-tertiary px-2 py-4 text-center">
+      <div v-else-if="!sessionList.length" class="text-copy text-tertiary px-2 py-4 text-center">
         No sessions yet
       </div>
 
@@ -152,11 +189,19 @@ async function createNewSession() {
           <div class="flex w-full items-center gap-2 px-2 py-1.5">
             <ChatBubbleLeftIcon class="text-tertiary size-3.5 shrink-0" />
             <span
-              class="text-copy-sm min-w-0 flex-1 truncate"
+              class="text-copy min-w-0 flex-1 truncate"
               :class="activeSessionId === session.id ? 'text-primary' : 'text-secondary'"
             >
               {{ session.title }}
             </span>
+            <OButton
+              variant="ghost"
+              size="xs"
+              :icon-left="XMarkIcon"
+              class="shrink-0 opacity-0 group-hover/h:opacity-100"
+              title="Delete session"
+              @click.stop="promptDelete(session, $event)"
+            />
           </div>
         </OHover>
       </div>
@@ -166,14 +211,30 @@ async function createNewSession() {
     <div v-if="activeTab === 'files'" class="flex-1 overflow-auto py-1">
       <div
         v-if="!projectId"
-        class="text-copy-sm text-tertiary px-2 py-4 text-center"
+        class="text-copy text-tertiary px-2 py-4 text-center"
       >
         Open a project first
       </div>
-      <div v-else-if="!fileTree?.length" class="text-copy-sm text-tertiary px-2 py-4 text-center">
+      <div v-else-if="!fileTree?.length" class="text-copy text-tertiary px-2 py-4 text-center">
         No files
       </div>
       <OSidebarFileTree v-else :nodes="fileTree" />
     </div>
+
+    <!-- Delete confirmation dialog -->
+    <ODialog v-model="showDeleteDialog">
+      <template #title>Delete Session</template>
+      <template #content>
+        <p class="text-copy text-secondary">
+          Are you sure you want to delete <span class="text-primary font-medium">{{ deleteTarget?.title }}</span>? This cannot be undone.
+        </p>
+      </template>
+      <template #cancel>
+        <OButton variant="outline" size="sm">Cancel</OButton>
+      </template>
+      <template #submit>
+        <OButton variant="danger" size="sm" @click="confirmDelete">Delete</OButton>
+      </template>
+    </ODialog>
   </div>
 </template>

@@ -20,7 +20,7 @@ const emit = defineEmits<Emits>();
       :key="i"
       class="group/q flex items-start gap-2"
     >
-      <p class="text-copy-sm text-secondary min-w-0 flex-1 truncate py-0.5">
+      <p class="text-copy text-secondary min-w-0 flex-1 truncate py-0.5">
         {{ msg }}
       </p>
       <button

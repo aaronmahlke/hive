@@ -12,8 +12,6 @@ import {
   CpuChipIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  ChevronRightIcon,
-  ArrowPathIcon,
 } from "@heroicons/vue/16/solid";
 
 type ToolPart = {
@@ -87,10 +85,10 @@ const editInput = computed(() => part.state?.input || {});
 
 <template>
   <div
-    class="group/tc flex w-full items-center gap-2 rounded px-5 py-1 text-left transition-colors"
+    class="group/tc flex w-full items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-surface-1"
     :class="[
       isRead ? '' : 'cursor-pointer',
-      expanded ? 'bg-surface-1' : isRead ? '' : 'hover:bg-surface-1/50',
+      expanded ? 'bg-surface-1' : '',
     ]"
     @click="toggle"
   >
@@ -103,56 +101,52 @@ const editInput = computed(() => part.state?.input || {});
         'text-danger': part.state?.status === 'error',
       }"
     />
-    <span class="text-copy-sm text-secondary shrink-0">{{ def.name }}</span>
-    <span class="text-copy-sm text-tertiary min-w-0 flex-1 truncate font-mono">{{ subtitle }}</span>
-    <span v-if="duration" class="text-copy-xs text-tertiary shrink-0 font-mono">{{ duration }}</span>
-    <ArrowPathIcon
+    <span class="text-copy text-secondary shrink-0">{{ def.name }}</span>
+    <span class="text-copy text-tertiary min-w-0 flex-1 truncate font-mono">{{ subtitle }}</span>
+    <span v-if="duration" class="text-copy text-tertiary shrink-0 font-mono">{{ duration }}</span>
+    <OLoader
       v-if="part.state?.status === 'running' || part.state?.status === 'pending'"
-      class="text-accent size-3 shrink-0 animate-spin"
+      size="xs"
+      class="text-primary shrink-0"
     />
     <CheckCircleIcon v-else-if="part.state?.status === 'completed'" class="text-success size-3 shrink-0" />
     <ExclamationCircleIcon v-else-if="part.state?.status === 'error'" class="text-danger size-3 shrink-0" />
-    <ChevronRightIcon
-      v-if="!isRead"
-      class="text-tertiary size-3 shrink-0 transition-transform"
-      :class="expanded ? 'rotate-90' : ''"
-    />
-    <span v-else class="size-3 shrink-0" />
+
   </div>
 
-  <div v-if="expanded" class="mb-1 ml-10 mr-5 mt-0.5">
-    <div v-if="part.state?.status === 'error' && part.state?.error" class="text-copy-sm text-danger rounded bg-danger-subtle p-2">
+  <div v-if="expanded" class="mb-1 mt-0.5">
+    <div v-if="part.state?.status === 'error' && part.state?.error" class="text-copy text-danger rounded bg-danger-subtle p-2">
       {{ part.state.error }}
     </div>
 
     <div
       v-else-if="isEdit && (editInput.oldString || editInput.newString || editInput.content)"
-      class="max-h-64 overflow-auto rounded-md font-mono text-xs leading-relaxed"
+      class="max-h-64 overflow-auto rounded-md font-mono text-copy leading-relaxed"
     >
       <template v-if="part.tool === 'edit' && editInput.oldString">
         <div
           v-for="(line, i) in editInput.oldString.split('\n')"
           :key="'old-' + i"
-          class="px-2.5 py-0"
+          class="px-3 py-0"
           style="background: var(--diff-deletion-bg, rgba(255, 46, 63, 0.08)); color: var(--diff-deletion-text, #ff6b78)"
         >- {{ line }}</div>
         <div
           v-for="(line, i) in editInput.newString.split('\n')"
           :key="'new-' + i"
-          class="px-2.5 py-0"
+          class="px-3 py-0"
           style="background: var(--diff-addition-bg, rgba(46, 160, 67, 0.08)); color: var(--diff-addition-text, #56d364)"
         >+ {{ line }}</div>
       </template>
       <template v-else-if="part.tool === 'write' && editInput.content">
-        <pre class="bg-terminal text-terminal-text overflow-auto rounded-md p-2.5">{{ editInput.content.length > 2000 ? editInput.content.slice(0, 2000) + '\n... (truncated)' : editInput.content }}</pre>
+        <pre class="bg-terminal text-terminal-text overflow-auto rounded-md p-3">{{ editInput.content.length > 2000 ? editInput.content.slice(0, 2000) + '\n... (truncated)' : editInput.content }}</pre>
       </template>
     </div>
 
     <pre
       v-else-if="output || (part.tool === 'bash' && part.state?.input?.command)"
-      class="bg-terminal text-terminal-text max-h-48 overflow-auto rounded-md p-2.5 font-mono text-xs leading-relaxed"
+      class="bg-terminal text-terminal-text max-h-48 overflow-auto rounded-md p-3 font-mono text-copy leading-relaxed"
     ><template v-if="part.tool === 'bash' && part.state?.input?.command"><span class="text-terminal-dim">$</span> {{ part.state.input.command }}
 </template>{{ output }}</pre>
-    <div v-else class="text-copy-xs text-tertiary p-2 italic">No output</div>
+    <div v-else class="text-copy text-tertiary px-3 py-2 italic">No output</div>
   </div>
 </template>

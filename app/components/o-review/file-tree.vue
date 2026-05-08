@@ -48,7 +48,7 @@ function getFileName(file: string) {
                 : 'text-tertiary'
           "
         />
-        <span class="text-copy-sm text-primary truncate">
+        <span class="text-copy text-primary truncate">
           {{ getFileName(file) }}
         </span>
       </button>

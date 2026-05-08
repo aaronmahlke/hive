@@ -12,6 +12,7 @@ type Variant =
   | "danger"
   | "danger-light"
   | "transparent"
+  | "ghost"
   | "outline";
 
 type Size = "xs" | "sm" | "md";
@@ -43,6 +44,8 @@ const variantClasses: Record<Variant, string> = {
     "text-secondary hover:text-primary border border-transparent",
   transparent:
     "text-secondary hover:bg-surface-1 active:bg-inverse/10 border !border-transparent",
+  ghost:
+    "text-tertiary hover:text-primary hover:bg-inverse/10 active:bg-inverse/15 border !border-transparent",
   danger:
     "bg-danger text-danger-on hover:bg-danger-strong border border-transparent active:bg-danger-strong",
   "danger-light":
@@ -84,7 +87,7 @@ const isLoading = refDebounced(toRef(props, "loading"), 100);
     :is="to ? NuxtLink : 'button'"
     :type
     :to
-    class="relative flex min-w-fit cursor-default items-center justify-center gap-2 rounded-md text-sm whitespace-pre ring-focus outline-none select-none focus-visible:ring-2 focus-visible:ring-offset-2"
+    class="relative flex min-w-fit cursor-default items-center justify-center gap-2 rounded-md text-copy whitespace-pre ring-focus outline-none select-none focus-visible:ring-2 focus-visible:ring-offset-2"
     :class="[
       sizeClass,
       variantClasses[variant],

@@ -25,7 +25,7 @@ const emit = defineEmits<Emits>();
     <div class="flex w-full items-center justify-between py-1 pr-2 pl-8">
       <div class="flex min-w-0 items-center gap-2">
         <ChatBubbleLeftIcon class="text-tertiary size-3 shrink-0" />
-        <span class="text-copy-sm truncate" :class="active ? 'text-primary' : 'text-secondary'">
+        <span class="text-copy truncate" :class="active ? 'text-primary' : 'text-secondary'">
           {{ title }}
         </span>
       </div>

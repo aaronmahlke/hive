@@ -40,14 +40,14 @@ function selectOption(opt: string) {
     <div class="flex items-start gap-2">
       <QuestionMarkCircleIcon class="text-warn mt-0.5 size-4 shrink-0" />
       <div class="min-w-0 flex-1">
-        <p class="text-copy-sm text-primary">{{ signal.content }}</p>
+        <p class="text-copy text-primary">{{ signal.content }}</p>
 
         <div v-if="signal.options?.length" class="mt-2 flex flex-wrap gap-1">
           <button
             v-for="opt in (signal.options as string[])"
             :key="opt"
             type="button"
-            class="bg-base-3 border-edge text-copy-sm text-primary hover:bg-surface-1 rounded-md border px-2.5 py-1 transition-colors"
+            class="bg-base-3 border-edge text-copy text-primary hover:bg-surface-1 rounded-md border px-2.5 py-1 transition-colors"
             @click="selectOption(opt)"
           >
             {{ opt }}
@@ -57,7 +57,7 @@ function selectOption(opt: string) {
         <div v-else class="mt-2 flex gap-1.5">
           <input
             v-model="answer"
-            class="text-copy-sm text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 rounded-md border px-2.5 outline-none"
+            class="text-copy text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 rounded-md border px-2.5 outline-none"
             placeholder="Type your answer..."
             @keydown.enter.prevent="submit"
           />

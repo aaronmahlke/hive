@@ -33,20 +33,20 @@ function saveEdit() {
 
 <template>
   <div
-    class="my-1 mx-1.5 rounded-md border p-2.5 text-sm"
+    class="my-1 mx-1.5 rounded-md border p-2.5 text-copy"
     :class="resolved ? 'border-edge/50 opacity-40' : 'bg-base-1 border-edge'"
   >
     <template v-if="!editing">
       <p class="text-primary m-0 whitespace-pre-wrap">{{ content }}</p>
       <div v-if="!resolved" class="mt-2 flex gap-3">
         <button
-          class="text-tertiary hover:text-primary text-xs outline-none"
+          class="text-tertiary hover:text-primary text-copy outline-none"
           @click="startEdit"
         >
           Edit
         </button>
         <button
-          class="text-tertiary hover:text-primary text-xs outline-none"
+          class="text-tertiary hover:text-primary text-copy outline-none"
           @click="emit('delete')"
         >
           Delete
@@ -58,19 +58,19 @@ function saveEdit() {
         ref="textareaRef"
         v-model="editText"
         rows="3"
-        class="text-primary bg-base-0 border-edge w-full resize-none rounded-md border p-2 text-sm outline-none focus:border-edge-strong"
+        class="text-primary bg-base-0 border-edge w-full resize-none rounded-md border p-2 text-copy outline-none focus:border-edge-strong"
         @keydown.enter.meta.prevent="saveEdit"
         @keydown.escape.prevent="editing = false"
       />
       <div class="mt-2 flex justify-end gap-2">
         <button
-          class="text-tertiary hover:text-primary text-xs outline-none"
+          class="text-tertiary hover:text-primary text-copy outline-none"
           @click="editing = false"
         >
           Cancel
         </button>
         <button
-          class="text-primary text-xs font-medium outline-none"
+          class="text-primary text-copy font-medium outline-none"
           @click="saveEdit"
         >
           Save

@@ -111,7 +111,7 @@ const placeholder = computed(() => {
 
             <ComboboxContent position="inline">
               <ComboboxViewport class="max-h-[20rem] overflow-auto p-1">
-                <ComboboxEmpty class="text-copy-sm text-tertiary px-3 py-6 text-center">
+                <ComboboxEmpty class="text-copy text-tertiary px-3 py-6 text-center">
                   <template v-if="currentPage?.onSubmit && searchQuery.trim()">
                     Press Enter to {{ currentPage.title.toLowerCase() }}
                   </template>
@@ -124,14 +124,14 @@ const placeholder = computed(() => {
                   v-for="[category, cmds] in grouped"
                   :key="category"
                 >
-                  <ComboboxLabel class="text-copy-xs text-tertiary px-2 pt-2 pb-1 font-medium uppercase tracking-wide">
+                  <ComboboxLabel class="text-copy text-tertiary px-2 pt-2 pb-1 font-medium uppercase tracking-wide">
                     {{ category }}
                   </ComboboxLabel>
                   <ComboboxItem
                     v-for="cmd in cmds"
                     :key="cmd.id"
                     :value="cmd.id"
-                    class="text-copy-sm text-primary data-[highlighted]:bg-surface-1 flex cursor-default items-center gap-2 rounded-lg px-2 py-1.5 outline-none select-none"
+                    class="text-copy text-primary data-[highlighted]:bg-surface-1 flex cursor-default items-center gap-2 rounded-lg px-2 py-1.5 outline-none select-none"
                   >
                     <component
                       v-if="cmd.icon"
@@ -151,7 +151,7 @@ const placeholder = computed(() => {
                     />
                     <span
                       v-if="cmd.shortcut"
-                      class="bg-base-3 border-edge text-copy-xs text-tertiary shrink-0 rounded border px-1 py-0.5 font-mono"
+                      class="bg-base-3 border-edge text-copy text-tertiary shrink-0 rounded border px-1 py-0.5 font-mono"
                     >
                       {{ cmd.shortcut }}
                     </span>

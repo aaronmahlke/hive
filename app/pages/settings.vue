@@ -120,11 +120,11 @@ async function clearConfigPath(projectId: string) {
                 <span class="text-copy text-primary font-medium">{{ proj.name }}</span>
                 <span
                   v-if="proj.opencodeConfigPath"
-                  class="text-copy-sm text-secondary ml-2 font-mono"
+                  class="text-copy text-secondary ml-2 font-mono"
                 >
                   {{ proj.opencodeConfigPath }}
                 </span>
-                <span v-else class="text-copy-sm text-tertiary ml-2">
+                <span v-else class="text-copy text-tertiary ml-2">
                   Using global config
                 </span>
               </div>

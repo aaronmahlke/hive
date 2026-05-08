@@ -52,14 +52,14 @@ const statusClasses: Record<string, string> = {
           :is="isMain ? HomeIcon : CodeBracketIcon"
           class="text-tertiary size-3.5 shrink-0"
         />
-        <span class="text-copy-sm text-primary truncate">
+        <span class="text-copy text-primary truncate">
           {{ branchName }}
         </span>
       </div>
       <div class="flex items-center gap-1">
         <span
           v-if="pendingSignals > 0"
-          class="bg-warn text-warn-on text-copy-xs grid size-4 place-items-center rounded-full font-medium"
+          class="bg-warn text-warn-on text-copy grid size-4 place-items-center rounded-full font-medium"
         >
           {{ pendingSignals }}
         </span>

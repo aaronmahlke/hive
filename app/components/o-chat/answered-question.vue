@@ -26,10 +26,10 @@ const summary = computed(() => {
 </script>
 
 <template>
-  <div class="px-5 py-1">
+  <div class="px-3 py-1">
     <button
       type="button"
-      class="text-copy-sm text-tertiary hover:text-secondary flex items-center gap-1.5 outline-none"
+      class="text-copy text-tertiary hover:text-secondary flex items-center gap-1.5 outline-none"
       @click="expanded = !expanded"
     >
       <ChevronRightIcon
@@ -46,10 +46,10 @@ const summary = computed(() => {
         :key="idx"
         :class="idx > 0 ? 'border-edge mt-2 border-t pt-2' : ''"
       >
-        <p class="text-copy-xs text-tertiary mb-1">{{ q.header || q.question }}</p>
+        <p class="text-copy text-tertiary mb-1">{{ q.header || q.question }}</p>
         <div class="flex items-center gap-1.5">
           <CheckCircleIcon class="text-success size-3 shrink-0" />
-          <span class="text-copy-sm text-primary">
+          <span class="text-copy text-primary">
             {{ data.answers[idx]?.join(", ") || "No answer" }}
           </span>
         </div>

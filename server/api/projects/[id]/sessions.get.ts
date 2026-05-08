@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
       .sort((a: any, b: any) => (b.time?.updated || 0) - (a.time?.updated || 0))
       .map((s: any) => ({
         id: s.id,
-        title: s.title || s.slug || "Untitled",
+        title: s.title || "New Chat",
         slug: s.slug,
         agent: s.agent,
         model: s.model,

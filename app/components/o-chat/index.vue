@@ -140,7 +140,7 @@ watch(initializing, (val, old) => {
         </p>
       </div>
 
-      <div v-else class="mx-auto max-w-3xl">
+      <div v-else class="mx-auto max-w-3xl px-3">
         <OChatTurn
           v-for="(turn, i) in turns"
           :key="turn.userMessage.info.id"
@@ -154,7 +154,7 @@ watch(initializing, (val, old) => {
     </div>
 
     <div class="shrink-0">
-      <div class="mx-auto max-w-3xl px-4 pb-3">
+      <div class="mx-auto max-w-3xl px-3 pb-3">
         <div class="bg-base-2 rounded-[14px] p-0.5">
           <OChatPermission
             v-for="p in pendingPermissions"

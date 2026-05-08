@@ -5,7 +5,7 @@ import {
   CheckIcon,
   StopIcon,
 } from "@heroicons/vue/16/solid";
-import { ArrowPathIcon } from "@heroicons/vue/20/solid";
+
 
 type Part = {
   type: string;
@@ -172,10 +172,10 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
 </script>
 
 <template>
-  <div class="border-edge border-b py-5 last:border-b-0">
+  <div class="py-5">
     <!-- User message -->
-    <div class="px-5 pb-3">
-      <div class="bg-surface-1 inline-block max-w-full rounded-xl px-4 py-2.5">
+    <div class="pb-3">
+      <div class="bg-surface-1 inline-block max-w-full rounded-xl px-3 py-2.5">
         <p v-if="userText" class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
         <div v-if="userImages.length" class="flex flex-wrap gap-2" :class="userText ? 'mt-2' : ''">
           <button
@@ -196,11 +196,11 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
     </div>
 
     <!-- Working indicator -->
-    <div v-if="isWorking && !blocks.length" class="px-5 py-1">
+    <div v-if="isWorking && !blocks.length" class="px-3 py-1">
       <div class="flex items-center gap-1.5">
-        <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
-        <span class="text-copy-sm text-secondary">{{ statusText }}</span>
-        <span v-if="formattedDuration" class="text-copy-sm text-tertiary font-mono">
+        <OLoader size="xs" class="text-primary" />
+        <span class="text-copy text-secondary">{{ statusText }}</span>
+        <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
           · {{ formattedDuration }}
         </span>
         <button
@@ -217,10 +217,10 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
     <!-- Sequential blocks: text and tool groups interleaved -->
     <template v-for="(block, blockIdx) in blocks" :key="block.id">
       <!-- Text block -->
-      <div v-if="block.kind === 'text'" class="group/resp relative px-5 py-1">
+      <div v-if="block.kind === 'text'" class="group/resp relative px-3 py-1">
         <button
           type="button"
-          class="absolute top-1 right-5 grid size-6 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/resp:opacity-100"
+          class="absolute top-1 right-3 grid size-6 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/resp:opacity-100"
           :class="copied ? 'text-accent' : 'text-tertiary hover:text-secondary'"
           @click="copyResponse"
         >
@@ -231,28 +231,30 @@ function answersForToolGroup(tools: Part[]): AnsweredQuestion[] {
 
       <!-- Tool call group (collapsible) -->
       <template v-else-if="block.kind === 'tools'">
-        <OChatToolGroup
-          :tools="block.tools"
-          :is-last="blockIdx === blocks.length - 1"
-          :is-working="isWorking"
-          :status-text="statusText"
-          :formatted-duration="formattedDuration"
-          @abort="emit('abort')"
-        />
-        <OChatAnsweredQuestion
-          v-for="aq in answersForToolGroup(block.tools)"
-          :key="aq.id"
-          :data="aq"
-        />
+        <div class="my-1.5">
+          <OChatToolGroup
+            :tools="block.tools"
+            :is-last="blockIdx === blocks.length - 1"
+            :is-working="isWorking"
+            :status-text="statusText"
+            :formatted-duration="formattedDuration"
+            @abort="emit('abort')"
+          />
+          <OChatAnsweredQuestion
+            v-for="aq in answersForToolGroup(block.tools)"
+            :key="aq.id"
+            :data="aq"
+          />
+        </div>
       </template>
     </template>
 
     <!-- Working indicator when actively streaming after existing blocks -->
-    <div v-if="isWorking && blocks.length" class="px-5 py-1">
+    <div v-if="isWorking && blocks.length" class="px-3 py-1">
       <div class="flex items-center gap-1.5">
-        <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
-        <span class="text-copy-sm text-secondary">{{ statusText }}</span>
-        <span v-if="formattedDuration" class="text-copy-sm text-tertiary font-mono">
+        <OLoader size="xs" class="text-primary" />
+        <span class="text-copy text-secondary">{{ statusText }}</span>
+        <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
           · {{ formattedDuration }}
         </span>
         <button

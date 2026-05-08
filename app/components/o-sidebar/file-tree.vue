@@ -56,7 +56,7 @@ function isExpanded(path: string): boolean {
             :is="isExpanded(node.path) ? FolderOpenIcon : FolderIcon"
             class="text-tertiary size-3.5 shrink-0"
           />
-          <span class="text-copy-sm text-primary truncate">
+          <span class="text-copy text-primary truncate">
             {{ node.name }}
           </span>
         </div>
@@ -72,7 +72,7 @@ function isExpanded(path: string): boolean {
           :style="{ paddingLeft: `${depth * 12 + 20}px` }"
         >
           <DocumentIcon class="text-tertiary size-3.5 shrink-0" />
-          <span class="text-copy-sm text-secondary truncate">
+          <span class="text-copy text-secondary truncate">
             {{ node.name }}
           </span>
         </div>

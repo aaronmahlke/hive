@@ -141,7 +141,7 @@ function getAnswerPreview(qIdx: number): string {
         v-for="(q, idx) in request.questions"
         :key="idx"
         type="button"
-        class="text-copy-xs flex items-center gap-1 rounded px-2 py-1 transition-colors"
+        class="text-copy flex items-center gap-1 rounded px-2 py-1 transition-colors"
         :class="idx === activeTab
           ? 'bg-surface-1 text-primary font-medium'
           : getAnswerPreview(idx)
@@ -158,7 +158,7 @@ function getAnswerPreview(qIdx: number): string {
     <div class="flex items-start gap-2">
       <QuestionMarkCircleIcon class="text-accent mt-0.5 size-4 shrink-0" />
       <div class="min-w-0 flex-1">
-        <p class="text-copy-sm text-primary">{{ currentQuestion.question }}</p>
+        <p class="text-copy text-primary">{{ currentQuestion.question }}</p>
 
         <!-- Options -->
         <div v-if="currentQuestion.options?.length" class="mt-2 flex flex-col gap-1">
@@ -166,7 +166,7 @@ function getAnswerPreview(qIdx: number): string {
             v-for="opt in currentQuestion.options"
             :key="opt.label"
             type="button"
-            class="text-copy-sm flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors"
+            class="text-copy flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors"
             :class="selections[activeTab].includes(opt.label)
               ? 'bg-accent/10 border-accent text-primary'
               : 'bg-base-3 border-edge text-primary hover:bg-surface-1'"
@@ -189,7 +189,7 @@ function getAnswerPreview(qIdx: number): string {
           <button
             v-if="currentQuestion.custom !== false"
             type="button"
-            class="text-copy-sm flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors"
+            class="text-copy flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors"
             :class="showCustomInput[activeTab]
               ? 'bg-accent/10 border-accent text-primary'
               : 'bg-base-3 border-edge text-tertiary hover:bg-surface-1 hover:text-primary'"
@@ -207,7 +207,7 @@ function getAnswerPreview(qIdx: number): string {
           <input
             :data-custom-input="activeTab"
             v-model="customInputs[activeTab]"
-            class="text-copy-sm text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 rounded-md border px-2.5 outline-none"
+            class="text-copy text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 rounded-md border px-2.5 outline-none"
             placeholder="Type your answer..."
             @keydown.enter.prevent="submitCustom(activeTab)"
             @keydown.escape.prevent="emit('reject', request.id)"
@@ -227,7 +227,7 @@ function getAnswerPreview(qIdx: number): string {
           <button
             v-if="activeTab > 0"
             type="button"
-            class="text-copy-sm text-tertiary hover:text-primary flex items-center gap-0.5 rounded px-2 py-1 transition-colors"
+            class="text-copy text-tertiary hover:text-primary flex items-center gap-0.5 rounded px-2 py-1 transition-colors"
             @click="activeTab--"
           >
             <ChevronLeftIcon class="size-3" />
@@ -237,7 +237,7 @@ function getAnswerPreview(qIdx: number): string {
           <button
             v-if="!isLastTab"
             type="button"
-            class="text-copy-sm text-tertiary hover:text-primary flex items-center gap-0.5 rounded px-2 py-1 transition-colors"
+            class="text-copy text-tertiary hover:text-primary flex items-center gap-0.5 rounded px-2 py-1 transition-colors"
             @click="activeTab++"
           >
             Next
@@ -246,14 +246,14 @@ function getAnswerPreview(qIdx: number): string {
           <button
             v-if="isLastTab"
             type="button"
-            class="bg-accent text-accent-on text-copy-sm rounded-md px-3 py-1 transition-colors hover:opacity-90"
+            class="bg-accent text-accent-on text-copy rounded-md px-3 py-1 transition-colors hover:opacity-90"
             @click="submitAll"
           >
             Submit
           </button>
           <button
             type="button"
-            class="text-copy-sm text-tertiary hover:text-danger rounded px-2 py-1 transition-colors"
+            class="text-copy text-tertiary hover:text-danger rounded px-2 py-1 transition-colors"
             @click="emit('reject', request.id)"
           >
             Cancel

@@ -2,7 +2,6 @@
 import {
   CheckCircleIcon,
   XCircleIcon,
-  ArrowPathIcon,
   ClipboardDocumentListIcon,
 } from "@heroicons/vue/16/solid";
 
@@ -23,40 +22,41 @@ const expanded = ref(isLatest);
 
 const completedCount = computed(() => todos.filter((t) => t.status === "completed").length);
 const totalCount = computed(() => todos.length);
+const allDone = computed(() => completedCount.value === totalCount.value);
+const hasInProgress = computed(() => todos.some((t) => t.status === "in_progress"));
 
 const statusIcon: Record<string, any> = {
   completed: CheckCircleIcon,
   cancelled: XCircleIcon,
-  in_progress: ArrowPathIcon,
 };
 
 const statusClass: Record<string, string> = {
   pending: "border-edge bg-base-3",
-  in_progress: "text-accent",
+  in_progress: "text-primary",
   completed: "text-success",
   cancelled: "text-tertiary",
-};
-
-const priorityDot: Record<string, string> = {
-  high: "bg-danger",
-  medium: "bg-warn",
-  low: "bg-inverse/20",
 };
 </script>
 
 <template>
-  <div class="px-5 py-1">
-    <button
-      type="button"
-      class="text-copy-sm text-secondary hover:text-primary flex items-center gap-2 outline-none"
-      @click="expanded = !expanded"
-    >
-      <ClipboardDocumentListIcon class="text-tertiary size-3.5 shrink-0" />
-      <span>Todos</span>
-      <span class="text-tertiary">{{ completedCount }}/{{ totalCount }}</span>
-    </button>
+  <div
+    class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-1 text-left transition-colors hover:bg-surface-1"
+    :class="expanded ? 'bg-surface-1' : ''"
+    @click="expanded = !expanded"
+  >
+    <ClipboardDocumentListIcon class="text-tertiary size-3.5 shrink-0" />
+    <span class="text-copy text-secondary shrink-0">Todos</span>
+    <span class="text-copy text-tertiary min-w-0 flex-1 truncate">{{ completedCount }}/{{ totalCount }}</span>
+    <OLoader
+      v-if="hasInProgress"
+      size="xs"
+      class="text-primary shrink-0"
+    />
+    <CheckCircleIcon v-else-if="allDone" class="text-success size-3 shrink-0" />
+  </div>
 
-    <div v-if="expanded" class="mt-1.5 ml-5.5 flex flex-col gap-0.5">
+  <div v-if="expanded" class="mb-1 mt-0.5">
+    <div class="flex flex-col gap-0.5 py-1 px-3">
       <div
         v-for="(todo, i) in todos"
         :key="i"
@@ -64,14 +64,16 @@ const priorityDot: Record<string, string> = {
         :class="todo.status === 'cancelled' ? 'opacity-40' : ''"
       >
         <div class="mt-0.5 flex shrink-0 items-center">
+          <OLoader
+            v-if="todo.status === 'in_progress'"
+            size="xs"
+            class="text-primary"
+          />
           <component
-            v-if="statusIcon[todo.status]"
+            v-else-if="statusIcon[todo.status]"
             :is="statusIcon[todo.status]"
             class="size-3.5"
-            :class="[
-              statusClass[todo.status],
-              todo.status === 'in_progress' ? 'animate-spin' : '',
-            ]"
+            :class="statusClass[todo.status]"
           />
           <div
             v-else
@@ -80,7 +82,7 @@ const priorityDot: Record<string, string> = {
           />
         </div>
         <span
-          class="text-copy-sm leading-snug"
+          class="text-copy leading-snug"
           :class="{
             'text-primary': todo.status === 'in_progress',
             'text-secondary': todo.status === 'pending',
@@ -89,11 +91,6 @@ const priorityDot: Record<string, string> = {
         >
           {{ todo.content }}
         </span>
-        <span
-          class="mt-1 inline-block size-1.5 shrink-0 rounded-full"
-          :class="priorityDot[todo.priority]"
-          :title="todo.priority"
-        />
       </div>
     </div>
   </div>

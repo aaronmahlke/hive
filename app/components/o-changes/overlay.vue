@@ -77,19 +77,19 @@ const totalDeletions = computed(() => {
     <!-- File header -->
     <div class="border-edge flex h-10 shrink-0 items-center justify-between border-b px-3">
       <div class="flex min-w-0 items-center gap-2">
-        <span class="text-copy-sm text-primary truncate font-mono">
+        <span class="text-copy text-primary truncate font-mono">
           {{ props.filePath }}
         </span>
         <span
           v-if="props.diffMode && props.diffMode !== 'combined'"
-          class="text-copy-xs text-tertiary shrink-0 rounded bg-surface-1 px-1.5 py-0.5"
+          class="text-copy text-tertiary shrink-0 rounded bg-surface-1 px-1.5 py-0.5"
         >
           {{ props.diffMode }}
         </span>
-        <span v-if="totalDeletions" class="text-copy-xs shrink-0 font-mono" style="color: var(--diff-deletion-base, #ff2e3f)">
+        <span v-if="totalDeletions" class="text-copy shrink-0 font-mono" style="color: var(--diff-deletion-base, #ff2e3f)">
           -{{ totalDeletions }}
         </span>
-        <span v-if="totalAdditions" class="text-copy-xs shrink-0 font-mono" style="color: var(--diff-addition-base, #00cab1)">
+        <span v-if="totalAdditions" class="text-copy shrink-0 font-mono" style="color: var(--diff-addition-base, #00cab1)">
           +{{ totalAdditions }}
         </span>
       </div>
@@ -97,7 +97,7 @@ const totalDeletions = computed(() => {
         <!-- Viewed toggle -->
         <button
           type="button"
-          class="bg-surface-1 text-primary hover:bg-surface-2 border-edge flex h-7 items-center gap-2 rounded-md border px-3 text-sm shadow-xs outline-none active:bg-surface-3"
+          class="bg-surface-1 text-primary hover:bg-surface-2 border-edge flex h-7 items-center gap-2 rounded-md border px-3 text-copy shadow-xs outline-none active:bg-surface-3"
           @click="emit('toggle-viewed')"
         >
            <div
@@ -139,10 +139,10 @@ const totalDeletions = computed(() => {
         class="flex h-full items-center justify-center gap-2"
       >
         <ArrowPathIcon class="text-tertiary size-4 animate-spin" />
-        <span class="text-copy-sm text-tertiary">Loading file...</span>
+        <span class="text-copy text-tertiary">Loading file...</span>
       </div>
 
-      <div v-else class="text-copy-sm text-tertiary flex h-full items-center justify-center">
+      <div v-else class="text-copy text-tertiary flex h-full items-center justify-center">
         No content available
       </div>
     </div>

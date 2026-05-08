@@ -137,7 +137,7 @@ const { containerRef: tabListRef, draggingIndex } = useDragReorder(openTabs);
             <NuxtLink
               :to="`/project/${proj!.id}`"
               draggable="false"
-              class="text-copy-sm max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-1 outline-none select-none"
+              class="text-copy max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-1 outline-none select-none"
               :class="
                 currentProjectId === proj!.id ? 'text-primary' : 'text-tertiary'
               "

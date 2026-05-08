@@ -418,7 +418,7 @@ onUnmounted(() => {
     }"
   >
     <div v-if="!highlightReady" class="flex h-full items-center justify-center py-12">
-      <span class="text-copy-sm text-tertiary">Loading diff...</span>
+      <span class="text-copy text-tertiary">Loading diff...</span>
     </div>
 
     <div v-else class="diff-split">

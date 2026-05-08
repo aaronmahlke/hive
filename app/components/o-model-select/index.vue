@@ -150,10 +150,10 @@ watch(open, (v, old) => {
   >
     <ComboboxAnchor as-child>
       <ComboboxTrigger
-        class="text-copy-xs hover:bg-surface-3 flex max-w-48 items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
+        class="text-copy hover:bg-surface-3 flex max-w-48 items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
         :class="modelId ? 'text-secondary' : 'text-tertiary'"
       >
-        <span class="truncate font-mono">{{ selectedModel?.name || modelId || "Model" }}</span>
+        <span class="truncate">{{ selectedModel?.name || modelId || "Model" }}</span>
         <ChevronDownIcon class="size-3 shrink-0 opacity-50" />
       </ComboboxTrigger>
     </ComboboxAnchor>
@@ -168,24 +168,24 @@ watch(open, (v, old) => {
           <ComboboxInput
             v-model="searchTerm"
             :display-value="() => ''"
-            class="text-copy-sm text-primary placeholder:text-tertiary border-edge flex h-8 w-full border-b bg-transparent px-2.5 leading-none outline-none"
+            class="text-copy text-primary placeholder:text-tertiary border-edge flex h-8 w-full border-b bg-transparent px-2.5 leading-none outline-none"
             placeholder="Search models..."
           />
 
-          <ComboboxEmpty class="text-copy-sm text-tertiary px-3 py-3 text-center">
+          <ComboboxEmpty class="text-copy text-tertiary px-3 py-3 text-center">
             No models found
           </ComboboxEmpty>
 
           <div class="max-h-64 overflow-auto py-1">
             <ComboboxGroup v-if="recentGroup">
-              <ComboboxLabel class="text-copy-xs text-tertiary px-3 py-1 font-medium">
+              <ComboboxLabel class="text-copy text-tertiary px-3 py-1 font-medium">
                 {{ recentGroup.providerName }}
               </ComboboxLabel>
               <ComboboxItem
                 v-for="model in recentGroup.models"
                 :key="`recent:${model.key}`"
                 :value="model.key"
-                class="text-copy-sm text-primary hover:bg-surface-1 data-[highlighted]:bg-surface-1 relative flex cursor-pointer items-center gap-2 px-3 py-1.5 outline-none"
+                class="text-copy text-primary hover:bg-surface-1 data-[highlighted]:bg-surface-1 relative flex cursor-pointer items-center gap-2 px-3 py-1.5 outline-none"
               >
                 <span class="size-4 shrink-0">
                   <ComboboxItemIndicator>
@@ -202,14 +202,14 @@ watch(open, (v, old) => {
             <template v-for="(group, gi) in filteredGroups" :key="group.providerId">
               <div v-if="gi > 0 || recentGroup" class="border-edge mx-2 my-1 border-t" />
               <ComboboxGroup>
-                <ComboboxLabel class="text-copy-xs text-tertiary px-3 py-1 font-medium">
+                <ComboboxLabel class="text-copy text-tertiary px-3 py-1 font-medium">
                   {{ group.providerName }}
                 </ComboboxLabel>
                 <ComboboxItem
                   v-for="model in group.models"
                   :key="model.key"
                   :value="model.key"
-                  class="text-copy-sm text-primary hover:bg-surface-1 data-[highlighted]:bg-surface-1 relative flex cursor-pointer items-center gap-2 px-3 py-1.5 outline-none"
+                  class="text-copy text-primary hover:bg-surface-1 data-[highlighted]:bg-surface-1 relative flex cursor-pointer items-center gap-2 px-3 py-1.5 outline-none"
                 >
                   <span class="size-4 shrink-0">
                     <ComboboxItemIndicator>

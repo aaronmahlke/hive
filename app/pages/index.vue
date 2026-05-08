@@ -39,7 +39,7 @@ async function openNew() {
 <template>
   <div class="flex h-full flex-col items-center justify-center p-8">
     <div v-if="projects?.length" class="mb-8 w-full max-w-sm">
-      <p class="text-copy-sm text-tertiary mb-2 px-1 font-medium uppercase">
+      <p class="text-copy text-tertiary mb-2 px-1 font-medium uppercase">
         Recent projects
       </p>
       <div class="flex flex-col gap-0.5">
@@ -57,11 +57,11 @@ async function openNew() {
             <FolderIcon class="text-tertiary size-4 shrink-0" />
             <div class="min-w-0 flex-1">
               <p class="text-copy text-primary truncate">{{ proj.name }}</p>
-              <p class="text-copy-xs text-tertiary truncate">{{ proj.path }}</p>
+              <p class="text-copy text-tertiary truncate">{{ proj.path }}</p>
             </div>
             <span
               v-if="proj.pkgManager"
-              class="text-copy-xs text-tertiary shrink-0"
+              class="text-copy text-tertiary shrink-0"
             >
               {{ proj.pkgManager }}
             </span>

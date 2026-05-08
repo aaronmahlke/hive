@@ -96,7 +96,6 @@ watch(() => content, async (val) => {
 <style>
 .o-markdown {
   line-height: 1.7;
-  font-size: 0.9375rem;
   color: var(--text-color-primary);
   overflow-wrap: break-word;
   word-break: break-word;
