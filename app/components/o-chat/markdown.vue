@@ -253,10 +253,10 @@ watch(() => content, async (val) => {
 }
 
 .o-markdown th {
-  font-weight: 600;
-  font-size: 0.8125em;
+  font-weight: var(--text-label--font-weight);
+  font-size: var(--text-label);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   color: var(--text-color-secondary);
   background: var(--background-color-subtle);
 }

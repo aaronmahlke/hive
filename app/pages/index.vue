@@ -39,7 +39,7 @@ async function openNew() {
 <template>
   <div class="flex h-full flex-col items-center justify-center p-8">
     <div v-if="projects?.length" class="mb-8 w-full max-w-sm">
-      <p class="text-copy text-tertiary mb-2 px-1 font-medium uppercase">
+      <p class="text-label uppercase tracking-wide text-tertiary mb-2 px-1">
         Recent projects
       </p>
       <div class="flex flex-col gap-0.5">

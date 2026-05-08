@@ -177,7 +177,7 @@ const statusColors: Record<string, string> = {
         <!-- Unstaged files -->
         <div v-if="unstagedFiles.length">
           <div class="mb-1 flex items-center justify-between px-2">
-            <p class="text-copy text-tertiary font-medium uppercase">
+            <p class="text-label uppercase tracking-wide text-tertiary">
               Unstaged ({{ unstagedFiles.length }})
             </p>
             <button
@@ -234,7 +234,7 @@ const statusColors: Record<string, string> = {
 
         <!-- Staged / Viewed files -->
         <div v-if="stagedFiles.length" :class="unstagedFiles.length ? 'mt-3' : ''">
-          <p class="text-copy text-tertiary mb-1 px-2 font-medium uppercase">
+          <p class="text-label uppercase tracking-wide text-tertiary mb-1 px-2">
             Viewed ({{ stagedFiles.length }})
           </p>
           <div class="flex flex-col gap-0.5">

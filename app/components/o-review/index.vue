@@ -87,7 +87,7 @@ async function addComment(content: string) {
     <div class="flex min-h-0 flex-1">
       <!-- File tree sidebar -->
       <div class="border-neutral w-56 shrink-0 overflow-auto border-r p-1.5">
-        <p class="text-copy text-tertiary mb-1 px-2 font-medium uppercase">
+        <p class="text-label uppercase tracking-wide text-tertiary mb-1 px-2">
           Changed Files ({{ review.changedFiles?.length || 0 }})
         </p>
         <OReviewFileTree

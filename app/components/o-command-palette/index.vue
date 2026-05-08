@@ -124,7 +124,7 @@ const placeholder = computed(() => {
                   v-for="[category, cmds] in grouped"
                   :key="category"
                 >
-                  <ComboboxLabel class="text-copy text-tertiary px-2 pt-2 pb-1 font-medium uppercase tracking-wide">
+                  <ComboboxLabel class="text-label uppercase tracking-wide text-tertiary px-2 pt-2 pb-1">
                     {{ category }}
                   </ComboboxLabel>
                   <ComboboxItem
