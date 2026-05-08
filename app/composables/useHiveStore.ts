@@ -855,17 +855,9 @@ export function useHiveStore() {
     forkSession,
   };
 
-  /** Revert to before a specific user message. Returns the message text for re-editing. */
-  function revertMessage(key: string, messageId: string): string | null {
-    const msgs = getMessages(key);
-    const msg = msgs.value.find((m) => m.info.id === messageId);
-    const text = msg?.parts
-      ?.filter((p: any) => p.type === "text" && !p.synthetic)
-      .map((p: any) => p.text)
-      .join("") || null;
-
+  /** Send a revert command to undo messages from a specific user message. */
+  function revertMessage(key: string, messageId: string) {
     wsSend(key, { type: "revert", data: { messageId } });
-    return text;
   }
 
   /** Fork the current session. The forked session ID comes back via WS 'forked' event. */
